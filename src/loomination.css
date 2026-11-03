@@ -269,6 +269,12 @@
 .ldm-ai .ldm-warn, .ldm-verdict.ldm-warn { color: #a56300; }
 .ldm-ai .ldm-error, .ldm-verdict.ldm-error { color: var(--ldm-warn); }
 
+/* Yarn on a cone */
+.ldm-weight { align-items: end; }
+.ldm-weight .ldm-field:first-child { flex: 1; }
+.ldm-big { font-size: 1.6rem; margin: 0.5rem 0; }
+.ldm-cone .ldm-instructions > button { margin-top: 0.5rem; }
+
 @media print {
   .site-header, .site-footer, .ldm-loom-form, [data-print] { display: none !important; }
   .ldm-yarn input { border: 0; padding: 0; }

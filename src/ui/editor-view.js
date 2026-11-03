@@ -22,7 +22,7 @@ export function starterDraft() {
   return E.setMeta(d, { title: '2/2 twill' });
 }
 
-export function mountEditor(root, { libraryBase, loomUrl, warpUrl }) {
+export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl }) {
   const store = createStore(saved.loadCurrent() ?? starterDraft());
   const ui = {
     tool: 'draw',      // 'draw' | 'select'
@@ -43,6 +43,7 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl }) {
       <div class="ldm-group">
         <button type="button" data-act="new">New</button>
         <button type="button" data-act="open">Open…</button>
+        ${imageToWifUrl ? `<a class="ldm-button" href="${imageToWifUrl}" title="Turn a picture of a drawdown into a WIF file, then Open it here">From an image…</a>` : ''}
         <button type="button" data-act="mine">My drafts</button>
         <button type="button" data-act="keep" title="Save to My drafts in this browser">Save</button>
         <button type="button" data-act="wif">Download .wif</button>

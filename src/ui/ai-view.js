@@ -42,7 +42,15 @@ function save(state) {
   }
 }
 
-export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl }) {
+// Add a yarn to the saved stash from another page (the cone estimator).
+export function addToStash(entry) {
+  const state = load();
+  state.stash.push({ yarn: 'custom', name: '', ypp: 0, color: '', hex: '#888888', yards: 0, ...entry });
+  save(state);
+  return state.stash.length;
+}
+
+export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl, coneUrl }) {
   const state = load();
   const loom = loadLoom();
   const lib = createLibrary(libraryBase);
@@ -71,6 +79,7 @@ export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl
         <tbody></tbody>
       </table></div>
       <button type="button" data-act="add-yarn">Add yarn</button>
+      ${coneUrl ? `<p class="ldm-hint">Don't know how many yards are left? <a href="${coneUrl}">Estimate from the cone's weight</a>.</p>` : ''}
     </section>
     <section class="ldm-step">
       <h2><span>4</span> Ask your AI</h2>

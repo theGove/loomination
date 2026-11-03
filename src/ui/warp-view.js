@@ -39,7 +39,7 @@ function saveInputs(inputs) {
   }
 }
 
-export function mountWarpPlanner(root, { libraryBase, loomUrl }) {
+export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
   let inputs = loadInputs();
   let page = null;
   const loom = loadLoom();
@@ -201,7 +201,7 @@ export function mountWarpPlanner(root, { libraryBase, loomUrl }) {
       </section>
       ${yarnSection('Warp', 'warp', plan.warp.byColor, 'ends', draft, warpYpp)}
       ${yarnSection('Weft', 'weft', plan.weft.byColor, 'picks', draft, weftYpp)}
-      <p class="ldm-hint">Yardage includes take-up, shrinkage and loom waste but no spare. "Enough" means at least 10% more than needed.</p>`;
+      <p class="ldm-hint">Yardage includes take-up, shrinkage and loom waste but no spare. "Enough" means at least 10% more than needed.${coneUrl ? ` Not sure what's on a cone? <a href="${coneUrl}">Estimate it from its weight</a>.` : ''}</p>`;
     out.querySelector('[data-print]').addEventListener('click', () => window.print());
     out.querySelectorAll('[data-onhand]').forEach((el) => updateStatus(el.closest('tr'), el.dataset.onhand));
   }

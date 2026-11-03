@@ -12,12 +12,16 @@ import { mountEditor } from './ui/editor-view.js';
 import { mountLoomSetup } from './ui/loom-view.js';
 import { mountWarpPlanner } from './ui/warp-view.js';
 import { mountAiHelper } from './ui/ai-view.js';
+import { mountConeEstimator } from './ui/cone-view.js';
 
 const defaults = {
   libraryBase: new URL('../library/', import.meta.url).href,
   designerUrl: new URL('../designer.html', import.meta.url).href,
   loomUrl: new URL('../loom.html', import.meta.url).href,
   warpUrl: new URL('../warp.html', import.meta.url).href,
+  aiUrl: new URL('../ai.html', import.meta.url).href,
+  coneUrl: new URL('../yarn.html', import.meta.url).href,
+  imageToWifUrl: new URL('../tools/image-to-wif.html', import.meta.url).href,
 };
 
 // Each option can be overridden on the element, e.g. data-library-base="...".
@@ -29,6 +33,7 @@ const views = {
   loom: (el) => mountLoomSetup(el, options(el)),
   warp: (el) => mountWarpPlanner(el, options(el)),
   ai: (el) => mountAiHelper(el, options(el)),
+  cone: (el) => mountConeEstimator(el, options(el)),
 };
 
 for (const el of document.querySelectorAll('[data-loomination]')) {
