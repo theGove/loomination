@@ -4,33 +4,12 @@
 // The draft comes from the library (loom.html#library=hw-12871) or, by
 // default, the draft currently open in the designer.
 
-import { parseWif } from '../core/wif.js';
 import { planForLoom, runs, sleyFor } from '../core/loom.js';
-import { createLibrary } from './library-data.js';
-import { loadCurrent } from './saved-drafts.js';
-import { starterDraft } from './editor-view.js';
+import { loadPageDraft } from './page-draft.js';
 import { escapeHtml } from './html.js';
+import { loadLoom, saveLoom } from './loom-profile.js';
 
-const LOOM_KEY = 'loomination.loom';
-export const DEFAULT_LOOM = { type: 'floor', shafts: 4, treadles: 6, shed: 'jack', reeds: [8, 10, 12], epi: 0 };
-
-function loadLoom() {
-  try {
-    return { ...DEFAULT_LOOM, ...JSON.parse(localStorage.getItem(LOOM_KEY) || '{}') };
-  } catch {
-    return { ...DEFAULT_LOOM };
-  }
-}
-
-function saveLoom(loom) {
-  try {
-    localStorage.setItem(LOOM_KEY, JSON.stringify(loom));
-  } catch {
-    // Not saved; the page still works for this visit.
-  }
-}
-
-export function mountLoomSetup(root, { libraryBase, designerUrl }) {
+export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
   let loom = loadLoom();
   let draft = null;
   let source = '';
@@ -50,6 +29,7 @@ export function mountLoomSetup(root, { libraryBase, designerUrl }) {
         <option value="counterbalance">Counterbalance</option>
         <option value="countermarch">Countermarch</option>
       </select></label>
+      <label class="ldm-field">Weaving width, inches <input type="number" name="widthIn" min="0" max="200" step="0.5" placeholder="optional"></label>
       <label class="ldm-field">Reeds you own (dents per inch) <input type="text" name="reeds" inputmode="decimal" placeholder="8, 10, 12"></label>
       <label class="ldm-field">Sett, ends per inch <input type="number" name="epi" min="0" max="200" step="0.5" placeholder="optional"></label>
       <p class="ldm-hint">Saved in this browser for next time.</p>
@@ -66,6 +46,7 @@ export function mountLoomSetup(root, { libraryBase, designerUrl }) {
     form.shed.value = loom.shed;
     form.reeds.value = loom.reeds.join(', ');
     form.epi.value = loom.epi || '';
+    form.widthIn.value = loom.widthIn || '';
     root.querySelectorAll('[data-floor]').forEach((el) => { el.hidden = loom.type !== 'floor'; });
   };
   fill();
@@ -78,6 +59,7 @@ export function mountLoomSetup(root, { libraryBase, designerUrl }) {
       shed: form.shed.value,
       reeds: form.reeds.value.split(/[\s,;]+/).map(Number).filter((n) => n > 0 && n <= 100),
       epi: Math.max(0, Number(form.epi.value) || 0),
+      widthIn: Math.max(0, Number(form.widthIn.value) || 0),
     };
     root.querySelectorAll('[data-floor]').forEach((el) => { el.hidden = loom.type !== 'floor'; });
     saveLoom(loom);
@@ -85,20 +67,13 @@ export function mountLoomSetup(root, { libraryBase, designerUrl }) {
   });
   form.addEventListener('submit', (e) => e.preventDefault());
 
-  const libraryId = new URLSearchParams(location.hash.slice(1)).get('library');
-  if (libraryId) {
-    createLibrary(libraryBase).wifText(libraryId)
-      .then((text) => {
-        draft = parseWif(text).draft;
-        source = `library draft ${libraryId}`;
-        render();
-      })
-      .catch((err) => { out.innerHTML = `<p>Could not load library draft ${escapeHtml(libraryId)}: ${escapeHtml(err.message)}</p>`; });
-  } else {
-    draft = loadCurrent() ?? starterDraft();
-    source = 'the draft open in the designer';
-    render();
-  }
+  let libraryId = null;
+  loadPageDraft(libraryBase)
+    .then((page) => {
+      ({ draft, source, libraryId } = page);
+      render();
+    })
+    .catch((err) => { out.innerHTML = `<p>Could not load the draft: ${escapeHtml(err.message)}</p>`; });
 
   function render() {
     if (!draft) return;
@@ -107,11 +82,14 @@ export function mountLoomSetup(root, { libraryBase, designerUrl }) {
     const editLink = designerUrl
       ? `<a href="${escapeHtml(libraryId ? `${designerUrl}#library=${encodeURIComponent(libraryId)}` : designerUrl)}">${libraryId ? 'Open in designer' : 'Edit in designer'}</a>`
       : '';
+    const warpLink = warpUrl
+      ? ` · <a href="${escapeHtml(libraryId ? `${warpUrl}#library=${encodeURIComponent(libraryId)}` : warpUrl)}">Plan the warp</a>`
+      : '';
     out.innerHTML = `
       <header class="ldm-instr-head">
         <div>
           <h2>${escapeHtml(title)}</h2>
-          <p class="ldm-hint">Instructions for ${escapeHtml(source)} on your ${loomName(loom)}. ${editLink}</p>
+          <p class="ldm-hint">Instructions for ${escapeHtml(source)} on your ${loomName(loom)}. ${editLink}${warpLink}</p>
         </div>
         <button type="button" data-print>Print</button>
       </header>
@@ -182,6 +160,7 @@ function sleySection(draft, plan, loom) {
       <h3>Sleying the reed</h3>
       <p>${escapeHtml(how)}</p>
       <p class="ldm-hint">At ${loom.epi} ends per inch, the ${plan.threading.total} ends in this draft are ${width.toFixed(1)} inches wide in the reed.</p>
+      ${loom.widthIn && width > loom.widthIn ? `<p class="ldm-problems">That is wider than your loom's ${loom.widthIn}-inch weaving width.</p>` : ''}
     </section>`;
 }
 

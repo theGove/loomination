@@ -22,7 +22,7 @@ export function starterDraft() {
   return E.setMeta(d, { title: '2/2 twill' });
 }
 
-export function mountEditor(root, { libraryBase, loomUrl }) {
+export function mountEditor(root, { libraryBase, loomUrl, warpUrl }) {
   const store = createStore(saved.loadCurrent() ?? starterDraft());
   const ui = {
     tool: 'draw',      // 'draw' | 'select'
@@ -49,6 +49,7 @@ export function mountEditor(root, { libraryBase, loomUrl }) {
         <button type="button" data-act="json" title="Loomination's own format">.json</button>
         <button type="button" data-act="png">.png</button>
         ${loomUrl ? `<a class="ldm-button" href="${loomUrl}" title="Threading, tie-up and treadling for your loom">Loom setup</a>` : ''}
+        ${warpUrl ? `<a class="ldm-button" href="${warpUrl}" title="Ends, warp length and yarn amounts">Warp plan</a>` : ''}
       </div>
       <div class="ldm-group">
         <button type="button" data-act="undo" title="Undo (Ctrl+Z)">Undo</button>

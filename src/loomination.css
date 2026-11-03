@@ -223,8 +223,24 @@
 .ldm-picks li { break-inside: avoid; padding: 0.1rem 0; }
 .ldm-pick { display: inline-block; min-width: 6.5rem; color: var(--ldm-muted); }
 
+/* Warp planner */
+.ldm-warp .ldm-loom-form h2 + * { margin-top: -0.25rem; }
+.ldm-warp details summary { cursor: pointer; font-size: 0.85rem; color: var(--ldm-muted); margin-bottom: 0.5rem; }
+.ldm-summary { padding: 0.75rem 1rem; background: var(--ldm-surface); border: 1px solid var(--ldm-line); border-radius: var(--ldm-radius); margin-top: 1rem; }
+.ldm-summary dd { font-size: 1.15rem; font-weight: 600; }
+.ldm-calc td:nth-child(2) { text-align: right; white-space: nowrap; }
+.ldm-calc td:nth-child(3) { text-align: left; }
+.ldm-calc .ldm-total th, .ldm-calc .ldm-total td { font-weight: 600; color: var(--ldm-fg); }
+.ldm-yarn td { text-align: left; white-space: nowrap; }
+.ldm-yarn input { width: 6rem; }
+.ldm-dot { display: inline-block; width: 0.9rem; height: 0.9rem; border: 1px solid var(--ldm-line); border-radius: 50%; vertical-align: -0.1rem; }
+.ldm-ok { color: #2e7d32; }
+.ldm-tight { color: #a56300; }
+.ldm-short { color: var(--ldm-warn); font-weight: 600; }
+
 @media print {
   .site-header, .site-footer, .ldm-loom-form, [data-print] { display: none !important; }
+  .ldm-yarn input { border: 0; padding: 0; }
   .ldm-loom { display: block; }
   .ldm { --ldm-fg: #000; --ldm-muted: #444; --ldm-line: #999; --ldm-grid: #888; --ldm-ink: #000; --ldm-cell: #fff; }
   .ldm-grid-table td.on { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

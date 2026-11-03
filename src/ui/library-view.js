@@ -12,7 +12,7 @@ import { escapeHtml } from './html.js';
 
 const PAGE_SIZE = 60;
 
-export function mountLibrary(root, { libraryBase, designerUrl, loomUrl }) {
+export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl }) {
   const lib = createLibrary(libraryBase);
   const parsed = new Map(); // id -> Promise<{ draft, warnings }>
   const loadDraft = (id) => {
@@ -190,6 +190,7 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl }) {
         <span class="ldm-readout" aria-live="off"></span>
         <span class="ldm-actions">
           ${loomUrl ? `<a class="ldm-button" href="${escapeHtml(`${loomUrl}#library=${encodeURIComponent(id)}`)}">Set up my loom</a>` : ''}
+          ${warpUrl ? `<a class="ldm-button" href="${escapeHtml(`${warpUrl}#library=${encodeURIComponent(id)}`)}">Plan the warp</a>` : ''}
           ${designerUrl ? `<a class="ldm-button" href="${escapeHtml(`${designerUrl}#library=${encodeURIComponent(id)}`)}">Open in designer</a>` : ''}
           <a class="ldm-button ldm-primary" href="${lib.wifUrl(id)}" download="${escapeHtml(id)}.wif">Download .wif</a>
         </span>

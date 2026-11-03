@@ -10,25 +10,23 @@
 import { mountLibrary } from './ui/library-view.js';
 import { mountEditor } from './ui/editor-view.js';
 import { mountLoomSetup } from './ui/loom-view.js';
+import { mountWarpPlanner } from './ui/warp-view.js';
 
-const libraryBase = new URL('../library/', import.meta.url).href;
-const designerUrl = new URL('../designer.html', import.meta.url).href;
-const loomUrl = new URL('../loom.html', import.meta.url).href;
+const defaults = {
+  libraryBase: new URL('../library/', import.meta.url).href,
+  designerUrl: new URL('../designer.html', import.meta.url).href,
+  loomUrl: new URL('../loom.html', import.meta.url).href,
+  warpUrl: new URL('../warp.html', import.meta.url).href,
+};
+
+// Each option can be overridden on the element, e.g. data-library-base="...".
+const options = (el) => Object.fromEntries(Object.entries(defaults).map(([k, v]) => [k, el.dataset[k] || v]));
 
 const views = {
-  library: (el) => mountLibrary(el, {
-    libraryBase: el.dataset.libraryBase || libraryBase,
-    designerUrl: el.dataset.designerUrl || designerUrl,
-    loomUrl: el.dataset.loomUrl || loomUrl,
-  }),
-  designer: (el) => mountEditor(el, {
-    libraryBase: el.dataset.libraryBase || libraryBase,
-    loomUrl: el.dataset.loomUrl || loomUrl,
-  }),
-  loom: (el) => mountLoomSetup(el, {
-    libraryBase: el.dataset.libraryBase || libraryBase,
-    designerUrl: el.dataset.designerUrl || designerUrl,
-  }),
+  library: (el) => mountLibrary(el, options(el)),
+  designer: (el) => mountEditor(el, options(el)),
+  loom: (el) => mountLoomSetup(el, options(el)),
+  warp: (el) => mountWarpPlanner(el, options(el)),
 };
 
 for (const el of document.querySelectorAll('[data-loomination]')) {
