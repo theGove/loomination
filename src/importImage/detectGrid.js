@@ -12,20 +12,41 @@
 
 import { pixel, colorDistance } from './color.js';
 
-export function detectGrid(img, { edgeThreshold = 70, trimBorder = true } = {}) {
+// expectedEnds / expectedPicks: known cell counts (e.g. from a catalog). If
+// detection disagrees, the grid is spread evenly over the cloth instead.
+export function detectGrid(img, { edgeThreshold = 70, trimBorder = true, expectedEnds = 0, expectedPicks = 0 } = {}) {
   const full = { x0: 0, y0: 0, x1: img.width, y1: img.height };
   let bounds = trimBorder ? trimUniformBorder(img, full, edgeThreshold) : full;
   let grid = fitGrid(img, bounds, edgeThreshold);
+  let framed = null;
   if (trimBorder) {
     // A first fit gives the cell size; with it we can tell a frame line with a
     // caption or footer beyond it from the last row of cells.
-    const framed = cropToFrame(img, bounds, grid, edgeThreshold);
+    framed = cropToFrame(img, bounds, grid, edgeThreshold);
     if (framed) {
       bounds = trimUniformBorder(img, framed, edgeThreshold);
       grid = fitGrid(img, bounds, edgeThreshold);
     }
   }
-  return { ...grid, bounds, numEnds: grid.x.count, numPicks: grid.y.count };
+  // When a frame line was trimmed, the cloth also has (assumed 1 px) lines
+  // between cells, so each cell owns one line's width.
+  const line = framed ? 1 : 0;
+  const x = forceCount(grid.x, expectedEnds, bounds.x0, bounds.x1, line);
+  const y = forceCount(grid.y, expectedPicks, bounds.y0, bounds.y1, line);
+  const forced = x !== grid.x || y !== grid.y;
+  return { x, y, bounds, forced, numEnds: x.count, numPicks: y.count };
+}
+
+// Apply a known cell count. The detected pitch and start are usually right
+// even when the count is off (a caption below the cloth counted as cells), so
+// keep them when that many cells fit; otherwise spread the cells evenly.
+function forceCount(axis, expected, lo, hi, line) {
+  if (!expected || axis.count === expected) return axis;
+  const end = axis.start + expected * axis.pitch;
+  if (axis.start >= lo - axis.pitch / 2 && end <= hi + axis.pitch / 2) {
+    return { ...axis, count: expected };
+  }
+  return { start: lo - line, pitch: (hi - lo + line) / expected, count: expected };
 }
 
 function fitGrid(img, bounds, edgeThreshold) {
@@ -77,29 +98,53 @@ function trimUniformBorder(img, b, threshold) {
 }
 
 // Cut off captions and footers (e.g. "Handweaving.net #12995" under the
-// drawdown). Many renderers draw a thin frame line around the cloth; if what
-// lies beyond the outermost such line isn't about one cell thick, it isn't a
-// row of cells, so drop it. Returns new bounds, or null if nothing changed.
+// drawdown). Many renderers draw a thin frame line around the cloth. A line is
+// the frame if what lies beyond it is not cloth: either a sliver too thin to
+// be a cell, or a region more than a cell thick that is nearly all one color
+// (a caption is background plus a little ink; cloth has two or more colors in
+// quantity). Lines inside the cloth can also be solid, so the innermost line
+// that qualifies wins. Returns new bounds, or null if nothing changed.
 function cropToFrame(img, b, grid, threshold) {
   const out = { ...b };
   const rows = thinLines(img, out, 'y', threshold);
-  [out.y0, out.y1] = cropSides(rows, out.y0, out.y1, grid.y.pitch);
+  [out.y0, out.y1] = cropSides(img, rows, out, 'y', grid.y.pitch);
   const cols = thinLines(img, out, 'x', threshold);
-  [out.x0, out.x1] = cropSides(cols, out.x0, out.x1, grid.x.pitch);
+  [out.x0, out.x1] = cropSides(img, cols, out, 'x', grid.x.pitch);
   const changed = out.x0 !== b.x0 || out.x1 !== b.x1 || out.y0 !== b.y0 || out.y1 !== b.y1;
   return changed ? out : null;
 }
 
-function cropSides(lines, lo, hi, pitch) {
-  const notACell = (margin) => margin > 1.5 * pitch || (margin > 0 && margin < 0.5 * pitch);
+function cropSides(img, lines, b, axis, pitch) {
+  const [lo, hi] = axis === 'y' ? [b.y0, b.y1] : [b.x0, b.x1];
+  const region = (from, to) => (axis === 'y' ? { ...b, y0: from, y1: to } : { ...b, x0: from, x1: to });
+  const notCloth = (from, to) => {
+    const margin = to - from;
+    if (margin > 0 && margin < 0.5 * pitch) return true;
+    return margin > 1.5 * pitch && dominantShare(img, region(from, to)) >= 0.8;
+  };
   // A line can only be the frame on the side it's nearer to.
   const mid = (lo + hi) / 2;
-  const first = lines.find((l) => l.end <= mid);
-  const last = lines.findLast((l) => l.start >= mid);
-  return [
-    first && notACell(first.start - lo) ? first.start : lo,
-    last && notACell(hi - last.end) ? last.end : hi,
-  ];
+  const top = lines.filter((l) => l.end <= mid).reverse().find((l) => notCloth(lo, l.start));
+  const bottom = lines.filter((l) => l.start >= mid).find((l) => notCloth(l.end, hi));
+  return [top ? top.start : lo, bottom ? bottom.end : hi];
+}
+
+// Share of the region's pixels taken by its most common color.
+function dominantShare(img, { x0, y0, x1, y1 }) {
+  const counts = new Map();
+  let best = 0;
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * img.width + x) * 4;
+      // Quantize so JPEG noise doesn't split one color into many.
+      const key = ((img.data[i] >> 5) << 6) | ((img.data[i + 1] >> 5) << 3) | (img.data[i + 2] >> 5);
+      const n = (counts.get(key) ?? 0) + 1;
+      counts.set(key, n);
+      if (n > best) best = n;
+    }
+  }
+  const total = (x1 - x0) * (y1 - y0);
+  return total ? best / total : 0;
 }
 
 // Runs of at most 3 pixel rows (or columns) that are one solid color across

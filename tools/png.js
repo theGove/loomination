@@ -1,4 +1,4 @@
-// Minimal PNG decoder for running image tests in Node (browsers decode images
+// Minimal PNG decoder for Node tools and tests (browsers decode images
 // themselves). Handles 8-bit, non-interlaced grayscale, RGB, palette, gray+alpha
 // and RGBA, which covers screenshots and web exports. Returns ImageData-shaped
 // { width, height, data }.

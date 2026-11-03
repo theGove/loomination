@@ -93,17 +93,15 @@ for (const [name, make] of Object.entries(DRAFTS)) {
   }
 }
 
-// Add a white band with black "text" blobs under the image, like the caption
-// handweaving.net puts under its drawdowns.
+// Add a white band with black "text" strokes under the image, like the caption
+// handweaving.net puts under its drawdowns (real ones are 4-15% ink).
 function addFooter(img, height = 20) {
   const width = img.width;
   const data = new Uint8ClampedArray(width * (img.height + height) * 4).fill(255);
   data.set(img.data);
-  for (let x = 2; x < Math.min(width - 4, 150); x += 5) {
-    const top = img.height + 5 + (x % 3);
-    for (let y = top; y < top + 9; y++) {
-      for (let dx = 0; dx < 2; dx++) data.set([0, 0, 0, 255], (y * width + x + dx) * 4);
-    }
+  for (let x = 3; x < width * 0.8; x += 4) {
+    const top = img.height + 6 + (x % 3);
+    for (let y = top; y < top + 8; y++) data.set([0, 0, 0, 255], (y * width + x) * 4);
   }
   return { width, height: img.height + height, data };
 }

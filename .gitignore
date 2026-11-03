@@ -1,1 +1,3 @@
 tests/fixtures/real/
+# Private data-gathering tool and its cache
+harvest/

@@ -1,0 +1,33 @@
+{
+ "generated": "2026-11-03T19:36:50+00:00",
+ "publicDomainCutoff": 1930,
+ "fields": [
+  "id",
+  "book",
+  "title",
+  "names",
+  "shafts",
+  "treadles",
+  "ends",
+  "picks",
+  "unitEnds",
+  "unitPicks",
+  "warpFloat",
+  "weftFloat",
+  "colors",
+  "flags"
+ ],
+ "flags": {
+  "straightThreading": 1,
+  "straightTreadling": 2,
+  "pointThreading": 4,
+  "pointTreadling": 8,
+  "blockDraft": 16
+ },
+ "draftPath": "drafts/{last two digits of number}/{id}.wif",
+ "shards": {
+  "02": 18,
+  "03": 2
+ },
+ "total": 20
+}

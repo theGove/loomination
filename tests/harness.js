@@ -52,7 +52,7 @@ export async function loadFixture(path) {
 export async function loadImageFixture(path) {
   const { bytes, blob } = await fetchFixture(path);
   if (bytes) {
-    const { decodePng } = await import('./png.js');
+    const { decodePng } = await import('../tools/png.js');
     return decodePng(bytes);
   }
   const { loadImage } = await import('../src/importImage/loadImage.js');

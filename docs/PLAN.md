@@ -3,13 +3,13 @@
 ## Context
 A free tool (loomination.org) for beginning/intermediate weavers to: browse historical drafts, see exactly how to set up *their* loom (table or floor, 2–16 shafts) to weave one, design/modify their own drafts with a live drawdown, and plan the warp (yardage, sett, sley, threading). It also builds a copy-paste prompt for the user's own AI (ChatGPT, Claude, etc.) about their yarn stash, and accepts the AI's answer back in a structured format the site can render. No paid APIs, no server.
 
-**Hosting:** the site is a Blogger blog (loomination.org as a free Blogger custom domain). Code lives in a GitHub repo and is served to Blogger through **jsDelivr** (`https://cdn.jsdelivr.net/gh/thegove/loomination@<tag>/...`). The Blogger theme holds only a tiny loader; the loader runs only on posts that need it. Developed locally as plain HTML/JS with no build step.
+**Hosting:** GitHub Pages from the public repo `thegove/loomination`, with loomination.org as the custom domain. No server and no database: the app is static files, and the draft library is static JSON + WIF files in `library/`. A blog (Blogger or otherwise) can link to or iframe pages of the site. Developed locally as plain HTML/JS with no build step.
 
 **Two shafts — yes, worth starting there.** Beyond plain weave, a 2-shaft (or rigid-heddle) loom does color-and-weave (log cabin, houndstooth-style checks, pinwheel, stripes/plaids), weft-faced and warp-faced work, and hand-manipulated laces/pick-up (leno, Brooks bouquet, Danish medallion, soumak). The draft engine treats 2 shafts as just the smallest case, and color-and-weave is a first-class feature for all shaft counts.
 
 ## Architecture (plain JS, no build)
 ```
-/index.html            local dev harness — fakes the Blogger page with mount points
+/index.html            the site's home page
 /src/core/             pure logic, no DOM
   draft.js             Draft model: threading[], tieup[][], treadling[], liftplan[][], warp/weft colors
   drawdown.js          compute interlacement grid (rising/sinking shed aware)
@@ -26,23 +26,20 @@ A free tool (loomination.org) for beginning/intermediate weavers to: browse hist
   ai-view.js
 /src/main.js           finds mount elements (<div data-loomination="designer|library|warp|ai">) and boots the matching view
 /src/loomination.css
-/patterns/index.json   catalog: id, name, shafts, structure, tags, source
-/patterns/<id>.json    one draft each, with provenance fields
-/blogger/theme-snippet.xml   the loader to paste into the Blogger theme (versioned with the code)
-/blogger/post-templates/     HTML to paste into tool posts and pattern posts
+/library/              public-domain draft library (see library/README.md)
+  books.json           source books with publication dates
+  index/shafts-NN.json search index, one shard per shaft count
+  drafts/NN/<id>.wif   the drafts
+/tools/                Node tools (batch image -> WIF, PNG decoder)
+/harvest/              private, git-ignored: builds library/ from handweaving.net
 ```
-Plain ES modules, no transpiling or bundling. Locally, serve with any static server (`npx serve` or VS Code Live Server); ES modules won't load from `file://`. The same files are what jsDelivr serves, so local and live run identical code.
+Plain ES modules, no transpiling or bundling. Locally, serve with any static server (`npx serve` or VS Code Live Server); ES modules won't load from `file://`. The same files are what GitHub Pages serves, so local and live run identical code.
 
-## GitHub → jsDelivr → Blogger
-- **Release by tag.** Push to GitHub, tag `v0.1.0`; Blogger points at `@v0.1.0`. Tagged URLs are immutable and cached hard by jsDelivr, so the live site never changes until you bump the tag in the theme. (Branch URLs like `@main` are cached for hours and can serve stale/mixed files — use only on a test blog; jsDelivr has a purge URL if needed.)
-- **Theme loader** (inside `<b:if cond='data:view.isSingleItem'>`):
-  `<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/thegove/loomination@v0.1.0/src/loomination.css">`
-  `<script type="module" src="https://cdn.jsdelivr.net/gh/thegove/loomination@v0.1.0/src/main.js"></script>`
-  Relative `import`s inside the modules resolve to the same jsDelivr tag automatically. `main.js` exits immediately when the page has no `data-loomination` mount, so ordinary posts cost one small request. Optionally gate further by post label via `<b:if>` on `data:post.labels`.
-- **Posts** only contain mount points, e.g. `<div data-loomination="designer"></div>` or `<div data-loomination="pattern" data-id="whig-rose"></div>`.
-- **Pattern data lives in the repo** (`/patterns/*.json`, fetched from the same jsDelivr tag), not in post bodies — easier to edit, review in git, and validate with tests. Each notable pattern can still get its own blog post (write-up, photos, comments, SEO) that just mounts the pattern by id; labels on those posts are for readers browsing the blog.
+## GitHub Pages
+- Pages serves the `main` branch root; a `CNAME` file holds `loomination.org`.
+- **Library, no database.** `library/index/shafts-NN.json` is split by shaft count, so a weaver with a 4-shaft loom loads only the 2–4 shaft shards. Rows are compact arrays (`fields` + `rows`); Pages gzips JSON. Each draft is fetched as its WIF only when opened. A library page filters the loaded rows in the browser (shafts, treadles, floats, book, era, straight/point draw, colors) and searches titles and common names.
+- **Provenance:** every draft comes from a book published 1930 or earlier; `books.json` records the date, and each WIF records its book, year, figure, and the Handweaving.net draft number it was digitized from.
 - Saved user designs: `localStorage` plus download/upload as `.wif` or `.json`. No accounts.
-- If load time ever matters (many small module files), add an optional bundling step later; not needed to start.
 
 ## Phase 1 spec: draft editor (follows handoff.md)
 `handoff.md` in the repo is the detailed spec for phase 1. Summary of decisions plus answers to its open questions:
@@ -106,13 +103,13 @@ Each pattern JSON carries `source`, `sourceYear`, `page`, `license: "public-doma
 1. **Engine + editor** (per handoff.md): 1a model + drawdown + WIF + tests, **review with you**; 1b canvas editor, editing helpers, undo/redo, views, autosave.
 2. **Loom setup**: loom profiles, table-loom lift plans, floor-loom tie-ups/skeleton tie-ups, printable instructions.
 3. **Warp planner** + yarn table.
-4. **Library**: ~20 seed drafts from Bronson/Atwater/Oelsner (2-shaft color-and-weave, 4-shaft twills/overshot/M&O/huck, 8-shaft twills/blocks), browser over `patterns/index.json`.
+4. **Library**: public-domain drafts (books published 1930 or earlier) harvested from Handweaving.net drawdown images and re-derived (private `harvest/` tool), browser over `library/index/`.
 5. **AI handoff**: prompt builder, response schema, parser/validator.
-6. **Blogger**: theme loader snippet, post templates, first tagged release on jsDelivr.
+6. **Publish**: GitHub Pages with the loomination.org custom domain.
 
 ## Verification
 - `index.html` locally: build a draft for each shaft count (2, 4, 8, 16), confirm drawdown matches known references (e.g. 2/2 twill, Atwater overshot) visually.
 - Round-trip WIF: import WIFs exported from handweaving.net / a free weaving program, re-export, re-import; drawdown identical.
 - Small `tests.html` page running console asserts on core modules (drawdown, lift-plan conversion, warp math against hand-calculated examples).
 - AI flow: paste the generated prompt into Claude/ChatGPT with the 8/2 + 8/4 cotton, 30" example; paste the reply back; confirm it parses and yardage checks run.
-- Blogger: on a separate test blog, paste the loader pointing at a test tag, create a tool post and a pattern post, confirm the code loads from jsDelivr only where mounts exist and patterns load from the repo. Then bump the tag on the real blog.
+- Pages: after enabling Pages, load the library page on the live site and confirm shards and WIFs load (gzip, paths, case-sensitive file names).
