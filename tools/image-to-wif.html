@@ -32,7 +32,7 @@
 <body>
   <p><a href="../designer.html">← Designer</a> · <a href="../">Library</a></p>
   <h1>Image to WIF</h1>
-  <p style="color: var(--muted); margin-top: 0">Turn a clean picture of a drawdown into a draft. Download the .wif, then use Open… in the designer.</p>
+  <p style="color: var(--muted); margin-top: 0">Turn a clean picture of a drawdown into a draft, then open it in the designer or download it as a .wif.</p>
   <div id="drop">Drop a drawdown image here, paste one (Ctrl+V), or <input type="file" id="file" accept="image/*"></div>
 
   <div class="controls">
@@ -43,6 +43,7 @@
     <label>Max treadles <input id="maxTreadles" type="number" value="24" min="2" max="100"></label>
     <label>Source <input id="source" type="text" size="28" placeholder="e.g. Atwater 1928, p. 42"></label>
     <button id="analyze" disabled>Analyze</button>
+    <button id="open" disabled>Open in designer</button>
     <button id="download" disabled>Download .wif</button>
   </div>
 
@@ -57,6 +58,7 @@
     import { importFromImage, cellRect } from '../src/importImage/index.js';
     import { renderDrawdown } from '../src/core/render.js';
     import { toWif } from '../src/core/wif.js';
+    import { setImport } from '../src/ui/saved-drafts.js';
 
     const $ = (id) => document.getElementById(id);
     let image = null;
@@ -87,6 +89,7 @@
     });
     $('analyze').addEventListener('click', analyze);
     $('download').addEventListener('click', download);
+    $('open').addEventListener('click', openInDesigner);
 
     function analyze() {
       if (!image) return;
@@ -100,6 +103,7 @@
       drawResult();
       showReport();
       $('download').disabled = false;
+      $('open').disabled = false;
     }
 
     function drawSource() {
@@ -156,10 +160,25 @@
       $('report').innerHTML = [status, ...lines.map(escape), ...r.warnings.map((w) => `<span class="bad">${escape(w)}</span>`)].join('\n');
     }
 
-    function download() {
+    // The derived draft with the title and source typed on this page.
+    function finishedDraft() {
       const draft = structuredClone(result.draft);
       draft.meta.title = $('title').value.trim();
       draft.meta.source = $('source').value.trim();
+      return draft;
+    }
+
+    // Hand the draft to the designer, which opens it as an undoable step.
+    function openInDesigner() {
+      if (!setImport(finishedDraft())) {
+        alert('This browser would not pass the draft to the designer (storage is blocked). Download the .wif and use Open… there instead.');
+        return;
+      }
+      location.href = '../designer.html#import=1';
+    }
+
+    function download() {
+      const draft = finishedDraft();
       const blob = new Blob([toWif(draft)], { type: 'text/plain' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
