@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-03T19:36:50+00:00",
+ "generated": "2026-11-03T20:28:18+00:00",
  "publicDomainCutoff": 1930,
  "fields": [
   "id",
@@ -27,7 +27,9 @@
  "draftPath": "drafts/{last two digits of number}/{id}.wif",
  "shards": {
   "02": 18,
-  "03": 2
+  "03": 3,
+  "05": 3,
+  "06": 1
  },
- "total": 20
+ "total": 25
 }
