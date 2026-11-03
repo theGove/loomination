@@ -11,7 +11,7 @@ import { layoutDraft, paintDraft, paintThumbnail, hitTest } from './draft-view.j
 
 const PAGE_SIZE = 60;
 
-export function mountLibrary(root, { libraryBase }) {
+export function mountLibrary(root, { libraryBase, designerUrl }) {
   const lib = createLibrary(libraryBase);
   const parsed = new Map(); // id -> Promise<{ draft, warnings }>
   const loadDraft = (id) => {
@@ -187,7 +187,10 @@ export function mountLibrary(root, { libraryBase }) {
         <button type="button" data-zoom="-1" aria-label="Smaller">−</button>
         <button type="button" data-zoom="1" aria-label="Larger">+</button>
         <span class="ldm-readout" aria-live="off"></span>
-        <a class="ldm-button" href="${lib.wifUrl(id)}" download="${escapeHtml(id)}.wif">Download .wif</a>
+        <span class="ldm-actions">
+          ${designerUrl ? `<a class="ldm-button" href="${escapeHtml(`${designerUrl}#library=${encodeURIComponent(id)}`)}">Open in designer</a>` : ''}
+          <a class="ldm-button ldm-primary" href="${lib.wifUrl(id)}" download="${escapeHtml(id)}.wif">Download .wif</a>
+        </span>
       </div>
       <div class="ldm-canvas-wrap"><canvas role="img" aria-label="Draft: threading, tie-up, treadling and drawdown"></canvas></div>
       ${meta.notes ? `<p class="ldm-notes">${escapeHtml(meta.notes)}</p>` : ''}

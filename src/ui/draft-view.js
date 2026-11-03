@@ -6,7 +6,7 @@
 // The layout is computed separately from painting so the editor can map mouse
 // positions to cells with hitTest().
 
-import { drawdown, drawdownColors } from '../core/drawdown.js';
+import { drawdown, drawdownColors, floatLengths } from '../core/drawdown.js';
 import { columnToEnd } from '../core/render.js';
 
 // Pixel rectangles of every region for a given cell size (CSS pixels).
@@ -50,6 +50,9 @@ export function hitTest(draft, layout, x, y) {
   return null;
 }
 
+// Inverse of columnToEnd (the mapping is its own inverse, but name it for clarity).
+const endToColumn = (draft, end) => columnToEnd(draft, end);
+
 // Colors come from the page's CSS custom properties so the view follows the theme.
 function themeColors(el) {
   const style = getComputedStyle(el);
@@ -59,6 +62,8 @@ function themeColors(el) {
     grid: get('--ldm-grid', '#ccc'),
     major: get('--ldm-grid-major', '#888'),
     ink: get('--ldm-ink', '#222'),
+    warn: get('--ldm-warn', '#e6007e'),
+    select: get('--ldm-select', '#2f6fde'),
   };
 }
 
@@ -76,8 +81,31 @@ function sizeCanvas(canvas, width, height) {
 
 const css = ([r, g, b]) => `rgb(${r},${g},${b})`;
 
+const WARP_BLACK = [0, 0, 0];
+const WEFT_WHITE = [255, 255, 255];
+
+// Colors of the drawdown cells for a view:
+//   color          the face of the cloth in its yarn colors
+//   interlacement  warp black, weft white, to see the structure alone
+//   back           the back of the cloth (warp and weft swap sides), as seen
+//                  through the face, so it lines up with the threading
+// Returns { colors, dd } where dd is the interlacement shown.
+export function viewColors(draft, view = 'color', face = drawdown(draft)) {
+  const dd = view === 'back' ? { warpOnTop: face.warpOnTop.map((row) => row.map((up) => !up)) } : face;
+  if (view === 'interlacement') {
+    return { dd, colors: dd.warpOnTop.map((row) => row.map((up) => (up ? WARP_BLACK : WEFT_WHITE))) };
+  }
+  return { dd, colors: drawdownColors(draft, dd) };
+}
+
 // Paint the full draft into canvas. Returns the layout used.
-export function paintDraft(canvas, draft, { cell = 10, dd = drawdown(draft) } = {}) {
+// Options:
+//   cell        cell size in CSS pixels
+//   view        'color' | 'interlacement' | 'back'
+//   floatLimit  highlight floats longer than this many threads (0 = off)
+//   selection   { axis: 'ends' | 'picks', from, to } (0-based, inclusive) or null
+//   major       heavier grid line every this many cells
+export function paintDraft(canvas, draft, { cell = 10, view = 'color', floatLimit = 0, selection = null, major = 4 } = {}) {
   const layout = layoutDraft(draft, cell);
   const ctx = sizeCanvas(canvas, layout.width, layout.height);
   const theme = themeColors(canvas);
@@ -116,7 +144,7 @@ export function paintDraft(canvas, draft, { cell = 10, dd = drawdown(draft) } = 
   }
 
   // Drawdown, painted in runs of one color per row.
-  const colors = drawdownColors(draft, dd);
+  const { colors, dd } = viewColors(draft, view);
   const r = R.drawdown;
   for (let row = 0; row < draft.numPicks; row++) {
     let start = 0;
@@ -145,16 +173,64 @@ export function paintDraft(canvas, draft, { cell = 10, dd = drawdown(draft) } = 
     ctx.fillRect(reg.x + reg.w, reg.y, 1, reg.h + 1);
   }
 
-  // Heavier lines every 4 cells help count threads. Groups count from end 1,
-  // shaft 1, treadle 1 and pick 1, so they start from whichever edge those are on.
-  if (cell >= 6) {
+  // Floats longer than the limit, on the side of the cloth being shown.
+  if (floatLimit > 0) {
+    const floats = floatLengths(dd);
+    ctx.fillStyle = theme.warn;
+    ctx.globalAlpha = 0.6;
+    const mark = Math.max(2, Math.round(cell * 0.4));
+    for (let row = 0; row < draft.numPicks; row++) {
+      for (let col = 0; col < draft.numEnds; col++) {
+        const e = columnToEnd(draft, col);
+        if (floats.warp[row][e] > floatLimit || floats.weft[row][e] > floatLimit) {
+          ctx.fillRect(r.x + col * cell + (cell - mark) / 2, r.y + row * cell + (cell - mark) / 2, mark, mark);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Selected ends (columns) or picks (rows).
+  if (selection) {
+    ctx.fillStyle = theme.select;
+    const band = (reg, start, count, vertical) => {
+      if (vertical) ctx.fillRect(reg.x + start * cell, reg.y, count * cell, reg.h);
+      else ctx.fillRect(reg.x, reg.y + start * cell, reg.w, count * cell);
+    };
+    const count = selection.to - selection.from + 1;
+    let regs;
+    let start;
+    if (selection.axis === 'ends') {
+      // Ends run right to left on screen in American numbering.
+      start = Math.min(endToColumn(draft, selection.from), endToColumn(draft, selection.to));
+      regs = [R.warpColors, R.threading, r];
+    } else {
+      start = selection.from;
+      regs = [r, R.side, R.weftColors];
+    }
+    ctx.globalAlpha = 0.25;
+    for (const reg of regs) band(reg, start, count, selection.axis === 'ends');
+    ctx.globalAlpha = 1;
+    const outline = selection.axis === 'ends'
+      ? { x: R.warpColors.x + start * cell, y: R.warpColors.y, w: count * cell, h: r.y + r.h - R.warpColors.y }
+      : { x: r.x, y: r.y + start * cell, w: R.weftColors.x + R.weftColors.w - r.x, h: count * cell };
+    ctx.fillRect(outline.x, outline.y, outline.w, 2);
+    ctx.fillRect(outline.x, outline.y + outline.h - 1, outline.w, 2);
+    ctx.fillRect(outline.x, outline.y, 2, outline.h);
+    ctx.fillRect(outline.x + outline.w - 1, outline.y, 2, outline.h);
+  }
+
+  // Heavier lines every `major` cells help count threads. Groups count from
+  // end 1, shaft 1, treadle 1 and pick 1, so they start from whichever edge
+  // those are on.
+  if (cell >= 6 && major > 1) {
     ctx.fillStyle = theme.major;
     const endsFromRight = draft.display.endNumbering !== 'ltr';
     const vLines = (reg, fromRight) => {
-      for (let i = 0; i <= reg.cols; i += 4) ctx.fillRect(reg.x + (fromRight ? reg.cols - i : i) * cell, reg.y, 1, reg.h + 1);
+      for (let i = 0; i <= reg.cols; i += major) ctx.fillRect(reg.x + (fromRight ? reg.cols - i : i) * cell, reg.y, 1, reg.h + 1);
     };
     const hLines = (reg, fromBottom) => {
-      for (let i = 0; i <= reg.rows; i += 4) ctx.fillRect(reg.x, reg.y + (fromBottom ? reg.rows - i : i) * cell, reg.w + 1, 1);
+      for (let i = 0; i <= reg.rows; i += major) ctx.fillRect(reg.x, reg.y + (fromBottom ? reg.rows - i : i) * cell, reg.w + 1, 1);
     };
     vLines(R.threading, endsFromRight);
     hLines(R.threading, true);

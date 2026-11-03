@@ -1,0 +1,13 @@
+/* Page chrome for loomination.org itself (not needed when embedding views). */
+body { margin: 0; background: #fbf9f5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body { background: #1b1916; } }
+:root[data-theme="dark"] body { background: #1b1916; }
+.site-header, main { max-width: 1400px; margin: 0 auto; padding: 0 16px; }
+.site-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1.5rem; padding-block: 1rem; border-bottom: 1px solid var(--ldm-line); margin-bottom: 1rem; }
+.site-header h1 { margin: 0; font-size: 1.4rem; letter-spacing: 0.02em; }
+.site-header h1 a { color: inherit; text-decoration: none; }
+.site-header nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.95rem; }
+.site-header nav a[aria-current] { font-weight: 600; }
+.site-header nav span { color: var(--ldm-muted); }
+.site-header nav small { font-size: 0.75rem; }
+.site-footer { color: var(--ldm-muted); font-size: 0.8rem; padding-block: 2rem; }
