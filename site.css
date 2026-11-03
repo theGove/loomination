@@ -11,3 +11,4 @@ body { margin: 0; background: #fbf9f5; }
 .site-header nav span { color: var(--ldm-muted); }
 .site-header nav small { font-size: 0.75rem; }
 .site-footer { color: var(--ldm-muted); font-size: 0.8rem; padding-block: 2rem; }
+@media print { body { background: #fff; } }

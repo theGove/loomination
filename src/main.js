@@ -9,16 +9,26 @@
 
 import { mountLibrary } from './ui/library-view.js';
 import { mountEditor } from './ui/editor-view.js';
+import { mountLoomSetup } from './ui/loom-view.js';
 
 const libraryBase = new URL('../library/', import.meta.url).href;
 const designerUrl = new URL('../designer.html', import.meta.url).href;
+const loomUrl = new URL('../loom.html', import.meta.url).href;
 
 const views = {
   library: (el) => mountLibrary(el, {
     libraryBase: el.dataset.libraryBase || libraryBase,
     designerUrl: el.dataset.designerUrl || designerUrl,
+    loomUrl: el.dataset.loomUrl || loomUrl,
   }),
-  designer: (el) => mountEditor(el, { libraryBase: el.dataset.libraryBase || libraryBase }),
+  designer: (el) => mountEditor(el, {
+    libraryBase: el.dataset.libraryBase || libraryBase,
+    loomUrl: el.dataset.loomUrl || loomUrl,
+  }),
+  loom: (el) => mountLoomSetup(el, {
+    libraryBase: el.dataset.libraryBase || libraryBase,
+    designerUrl: el.dataset.designerUrl || designerUrl,
+  }),
 };
 
 for (const el of document.querySelectorAll('[data-loomination]')) {

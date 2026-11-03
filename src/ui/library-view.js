@@ -8,10 +8,11 @@
 import { parseWif } from '../core/wif.js';
 import { createLibrary, filterDrafts, filterFromParams, filterToParams, DEFAULT_FILTER } from './library-data.js';
 import { layoutDraft, paintDraft, paintThumbnail, hitTest } from './draft-view.js';
+import { escapeHtml } from './html.js';
 
 const PAGE_SIZE = 60;
 
-export function mountLibrary(root, { libraryBase, designerUrl }) {
+export function mountLibrary(root, { libraryBase, designerUrl, loomUrl }) {
   const lib = createLibrary(libraryBase);
   const parsed = new Map(); // id -> Promise<{ draft, warnings }>
   const loadDraft = (id) => {
@@ -188,6 +189,7 @@ export function mountLibrary(root, { libraryBase, designerUrl }) {
         <button type="button" data-zoom="1" aria-label="Larger">+</button>
         <span class="ldm-readout" aria-live="off"></span>
         <span class="ldm-actions">
+          ${loomUrl ? `<a class="ldm-button" href="${escapeHtml(`${loomUrl}#library=${encodeURIComponent(id)}`)}">Set up my loom</a>` : ''}
           ${designerUrl ? `<a class="ldm-button" href="${escapeHtml(`${designerUrl}#library=${encodeURIComponent(id)}`)}">Open in designer</a>` : ''}
           <a class="ldm-button ldm-primary" href="${lib.wifUrl(id)}" download="${escapeHtml(id)}.wif">Download .wif</a>
         </span>
@@ -230,7 +232,3 @@ function describeHit(hit) {
 
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-}

@@ -196,3 +196,37 @@
 .ldm-mine li { display: flex; gap: 0.5rem; align-items: center; }
 .ldm-mine li span { flex: 1; min-width: 0; }
 .ldm-mine small { color: var(--ldm-muted); }
+
+/* Loom setup */
+.ldm-loom { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+@media (max-width: 760px) { .ldm-loom { grid-template-columns: minmax(0, 1fr); } }
+.ldm-loom-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.ldm-loom h2 { font-size: 1.25rem; margin: 0; }
+.ldm-instructions section { margin: 1.5rem 0; }
+.ldm-instructions h3 { font-size: 1.05rem; margin: 0 0 0.4rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--ldm-line); }
+.ldm-instructions h4 { font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }
+.ldm-instructions p { margin: 0.4rem 0; }
+.ldm-instr-head { display: flex; gap: 1rem; align-items: start; justify-content: space-between; }
+.ldm-problems { border-left: 4px solid var(--ldm-warn); padding: 0.25rem 0.75rem; margin: 1rem 0; }
+.ldm-notes-list { color: var(--ldm-muted); font-size: 0.9rem; padding-left: 1.2rem; }
+.ldm-mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere; }
+.ldm-scroll { overflow-x: auto; max-width: 100%; }
+.ldm-table, .ldm-grid-table { border-collapse: collapse; font-size: 0.85rem; }
+.ldm-table th, .ldm-table td { border: 1px solid var(--ldm-line); padding: 0.15rem 0.5rem; text-align: center; }
+.ldm-table th { font-weight: normal; color: var(--ldm-muted); text-align: left; }
+.ldm-grid-table th { font-weight: normal; color: var(--ldm-muted); padding: 0 0.35rem; font-size: 0.75rem; }
+.ldm-grid-table td { width: 1.4rem; height: 1.4rem; min-width: 1.4rem; border: 1px solid var(--ldm-grid); text-align: center; font-size: 0.75rem; padding: 0; }
+.ldm-grid-table td.on { background: var(--ldm-ink); color: var(--ldm-cell); }
+.ldm-grid-table td.sink { color: var(--ldm-fg); }
+.ldm-picks { list-style: none; padding: 0; margin: 0.5rem 0; }
+.ldm-picks.ldm-long { columns: 16rem; column-gap: 2rem; }
+.ldm-picks li { break-inside: avoid; padding: 0.1rem 0; }
+.ldm-pick { display: inline-block; min-width: 6.5rem; color: var(--ldm-muted); }
+
+@media print {
+  .site-header, .site-footer, .ldm-loom-form, [data-print] { display: none !important; }
+  .ldm-loom { display: block; }
+  .ldm { --ldm-fg: #000; --ldm-muted: #444; --ldm-line: #999; --ldm-grid: #888; --ldm-ink: #000; --ldm-cell: #fff; }
+  .ldm-grid-table td.on { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .ldm-instructions section { break-inside: avoid; }
+}
