@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image to WIF</title>
+  <!-- Developer tool for turning drawdown images into WIF files. Not the
+       end-user import dialog; that comes with the editor. -->
+  <style>
+    :root { --fg: #222; --bg: #fafaf7; --muted: #666; --line: #ccc; --bad: #c62828; --ok: #2e7d32; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --fg: #eee; --bg: #1c1c1c; --muted: #aaa; --line: #444; --bad: #ef5350; --ok: #66bb6a; }
+    }
+    :root[data-theme="dark"] { --fg: #eee; --bg: #1c1c1c; --muted: #aaa; --line: #444; --bad: #ef5350; --ok: #66bb6a; }
+    body { font: 14px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 16px; }
+    h1 { font-size: 1.3rem; margin: 0 0 0.5rem; }
+    #drop { border: 2px dashed var(--line); border-radius: 8px; padding: 1.5rem; text-align: center; color: var(--muted); }
+    #drop.over { border-color: var(--fg); }
+    .controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; margin: 1rem 0; align-items: end; }
+    label { display: flex; flex-direction: column; font-size: 0.85rem; color: var(--muted); }
+    input[type=number] { width: 6rem; }
+    .panes { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .pane { flex: 1 1 300px; min-width: 0; }
+    .pane h2 { font-size: 1rem; margin: 0 0 0.25rem; }
+    canvas { max-width: 100%; image-rendering: pixelated; border: 1px solid var(--line); }
+    #report { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+    .swatches span { display: inline-block; width: 1.5rem; height: 1.5rem; border: 1px solid var(--line); margin-right: 4px; vertical-align: middle; }
+    .bad { color: var(--bad); } .ok { color: var(--ok); }
+  </style>
+</head>
+<body>
+  <h1>Image to WIF</h1>
+  <div id="drop">Drop a drawdown image here, paste one (Ctrl+V), or <input type="file" id="file" accept="image/*"></div>
+
+  <div class="controls">
+    <label>Title <input id="title" type="text" size="28"></label>
+    <label>Color tolerance <input id="tolerance" type="number" value="60" min="5" max="400" step="5"></label>
+    <label>Edge threshold <input id="edge" type="number" value="70" min="5" max="400" step="5"></label>
+    <label>Max shafts <input id="maxShafts" type="number" value="16" min="2" max="40"></label>
+    <label>Max treadles <input id="maxTreadles" type="number" value="24" min="2" max="100"></label>
+    <label>Source <input id="source" type="text" size="28" placeholder="e.g. Atwater 1928, p. 42"></label>
+    <button id="analyze" disabled>Analyze</button>
+    <button id="download" disabled>Download .wif</button>
+  </div>
+
+  <div class="panes">
+    <div class="pane"><h2>Image + detected grid</h2><canvas id="source-canvas"></canvas></div>
+    <div class="pane"><h2>Rebuilt from the draft</h2><canvas id="result-canvas"></canvas></div>
+    <div class="pane"><h2>Report</h2><div class="swatches" id="swatches"></div><div id="report"></div></div>
+  </div>
+
+  <script type="module">
+    import { loadImage } from '../src/importImage/loadImage.js';
+    import { importFromImage, cellRect } from '../src/importImage/index.js';
+    import { renderDrawdown } from '../src/core/render.js';
+    import { toWif } from '../src/core/wif.js';
+
+    const $ = (id) => document.getElementById(id);
+    let image = null;
+    let fileName = 'draft';
+    let result = null;
+
+    async function useBlob(blob, name = 'pasted') {
+      image = await loadImage(blob);
+      fileName = name.replace(/\.[^.]+$/, '');
+      if (!$('title').value) $('title').value = fileName;
+      $('analyze').disabled = false;
+      analyze();
+    }
+
+    $('file').addEventListener('change', (e) => e.target.files[0] && useBlob(e.target.files[0], e.target.files[0].name));
+    const drop = $('drop');
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('over');
+      const f = e.dataTransfer.files[0];
+      if (f) useBlob(f, f.name);
+    });
+    document.addEventListener('paste', (e) => {
+      const item = [...e.clipboardData.items].find((i) => i.type.startsWith('image/'));
+      if (item) useBlob(item.getAsFile());
+    });
+    $('analyze').addEventListener('click', analyze);
+    $('download').addEventListener('click', download);
+
+    function analyze() {
+      if (!image) return;
+      result = importFromImage(image, {
+        colorTolerance: +$('tolerance').value,
+        edgeThreshold: +$('edge').value,
+        maxShafts: +$('maxShafts').value,
+        maxTreadles: +$('maxTreadles').value,
+      });
+      drawSource();
+      drawResult();
+      showReport();
+      $('download').disabled = false;
+    }
+
+    function drawSource() {
+      const c = $('source-canvas');
+      c.width = image.width;
+      c.height = image.height;
+      const ctx = c.getContext('2d');
+      ctx.putImageData(image, 0, 0);
+      ctx.strokeStyle = 'rgba(255, 0, 200, 0.8)';
+      ctx.lineWidth = 1;
+      const g = result.grid;
+      ctx.beginPath();
+      for (let col = 0; col <= g.numEnds; col++) {
+        const x = g.x.start + col * g.x.pitch;
+        ctx.moveTo(x, g.y.start);
+        ctx.lineTo(x, g.y.start + g.numPicks * g.y.pitch);
+      }
+      for (let row = 0; row <= g.numPicks; row++) {
+        const y = g.y.start + row * g.y.pitch;
+        ctx.moveTo(g.x.start, y);
+        ctx.lineTo(g.x.start + g.numEnds * g.x.pitch, y);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      for (const [row, col] of result.mismatches) {
+        const r = cellRect(g, col, row);
+        ctx.strokeRect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
+      }
+    }
+
+    function drawResult() {
+      const cell = Math.max(2, Math.round(result.grid.x.pitch));
+      const px = renderDrawdown(result.draft, { cellSize: cell - 1, gridLine: 1 });
+      const c = $('result-canvas');
+      c.width = px.width;
+      c.height = px.height;
+      c.getContext('2d').putImageData(new ImageData(px.data, px.width, px.height), 0, 0);
+    }
+
+    function showReport() {
+      const r = result.report;
+      $('swatches').innerHTML = result.palette.map((c) => `<span title="${c.join(',')}" style="background: rgb(${c.join(',')})"></span>`).join('');
+      const lines = [
+        `${r.ends} ends × ${r.picks} picks, ${r.colors} colors`,
+        `${r.shafts} shafts, ${r.treadles} treadles (${r.mode === 'liftplan' ? 'liftplan — too many treadles' : 'tie-up + treadling'})`,
+        `${r.ambiguousCells} ambiguous cells resolved`,
+        `longest float: warp ${r.longestWarpFloat}, weft ${r.longestWeftFloat}`,
+        r.exactColors ? 'warp/weft colors: exact' : `warp/weft colors: approximate (${result.violations.length} cells don't fit)`,
+      ];
+      const status = r.mismatches === 0
+        ? '<span class="ok">Draft reproduces the image exactly.</span>'
+        : `<span class="bad">${r.mismatches} cells differ (outlined in red).</span>`;
+      $('report').innerHTML = [status, ...lines.map(escape), ...r.warnings.map((w) => `<span class="bad">${escape(w)}</span>`)].join('\n');
+    }
+
+    function download() {
+      const draft = structuredClone(result.draft);
+      draft.meta.title = $('title').value.trim();
+      draft.meta.source = $('source').value.trim();
+      const blob = new Blob([toWif(draft)], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(draft.meta.title || fileName).replace(/[^\w.-]+/g, '-')}.wif`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function escape(s) {
+      return String(s).replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+    }
+  </script>
+</body>
+</html>

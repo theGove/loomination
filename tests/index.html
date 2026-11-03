@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loomination tests</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; }
+    .ok { color: #1a7f37; }
+    .fail { color: #cf222e; }
+    pre { margin: 0 0 0.5rem 2rem; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Loomination tests</h1>
+  <p id="summary">Running…</p>
+  <div id="results"></div>
+  <script type="module">
+    import { run } from './harness.js';
+    import './core.test.js';
+    import './wif.test.js';
+    import './importImage.test.js';
+
+    const results = document.getElementById('results');
+    const { total, failed } = await run(({ name, ok, error }) => {
+      const line = document.createElement('div');
+      line.className = ok ? 'ok' : 'fail';
+      line.textContent = `${ok ? '✓' : '✗'} ${name}`;
+      results.append(line);
+      if (!ok) {
+        const pre = document.createElement('pre');
+        pre.textContent = error.message;
+        results.append(pre);
+      }
+    });
+    const summary = document.getElementById('summary');
+    summary.textContent = `${total - failed}/${total} passed`;
+    summary.className = failed ? 'fail' : 'ok';
+  </script>
+</body>
+</html>

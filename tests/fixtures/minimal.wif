@@ -1,0 +1,10 @@
+[THREADING]
+1=1
+2=2
+3=1,2
+[tieup]
+1=1
+2=2
+[TREADLING]
+1=1
+2=2
