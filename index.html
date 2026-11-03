@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loomination</title>
+  <meta name="description" content="Free weaving-draft tools: historical public-domain drafts, a draft designer, and loom setup help.">
+  <link rel="stylesheet" href="src/loomination.css">
+  <style>
+    body { margin: 0; background: #fbf9f5; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body { background: #1b1916; } }
+    :root[data-theme="dark"] body { background: #1b1916; }
+    .site-header, main { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+    .site-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1.5rem; padding-block: 1rem; border-bottom: 1px solid var(--ldm-line); margin-bottom: 1rem; }
+    .site-header h1 { margin: 0; font-size: 1.4rem; letter-spacing: 0.02em; }
+    .site-header nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.95rem; }
+    .site-header nav span { color: var(--ldm-muted); }
+    .site-header nav small { font-size: 0.75rem; }
+    .site-footer { color: var(--ldm-muted); font-size: 0.8rem; padding-block: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="ldm">
+    <header class="site-header">
+      <h1>Loomination</h1>
+      <nav aria-label="Sections">
+        <a href="./" aria-current="page">Library</a>
+        <span>Designer <small>(coming soon)</small></span>
+        <span>Loom setup <small>(coming soon)</small></span>
+        <span>Warp plan <small>(coming soon)</small></span>
+      </nav>
+    </header>
+    <main>
+      <div data-loomination="library"></div>
+      <footer class="site-footer">
+        Drafts come from books published in 1930 or earlier (US public domain), digitized by
+        <a href="https://www.handweaving.net">Handweaving.net</a>. See the
+        <a href="library/README.md">library notes</a> for sources.
+      </footer>
+    </main>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

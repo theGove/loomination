@@ -3,6 +3,7 @@ import { run } from './harness.js';
 import './core.test.js';
 import './wif.test.js';
 import './importImage.test.js';
+import './library.test.js';
 
 const { total, failed, skipped } = await run(({ name, ok, error, skipped }) => {
   console.log(`${skipped ? 'skip' : ok ? 'ok  ' : 'FAIL'} ${name}${skipped ? ` (${skipped})` : ''}`);

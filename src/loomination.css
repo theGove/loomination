@@ -1,0 +1,136 @@
+/* Loomination styles. Everything is scoped under .ldm so the views can sit
+   inside a blog's own styles. Colors are custom properties; the draft canvas
+   reads --ldm-cell, --ldm-grid, --ldm-grid-major and --ldm-ink. */
+
+.ldm {
+  --ldm-fg: #24211d;
+  --ldm-muted: #6b645b;
+  --ldm-bg: #fbf9f5;
+  --ldm-surface: #ffffff;
+  --ldm-line: #ddd6cb;
+  --ldm-accent: #8a3b12;
+  --ldm-accent-fg: #ffffff;
+  --ldm-cell: #ffffff;
+  --ldm-grid: #cfc8bd;
+  --ldm-grid-major: #8c8478;
+  --ldm-ink: #24211d;
+  --ldm-radius: 6px;
+  color: var(--ldm-fg);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ldm {
+    --ldm-fg: #ece7df;
+    --ldm-muted: #a69e92;
+    --ldm-bg: #1b1916;
+    --ldm-surface: #25221e;
+    --ldm-line: #3b3731;
+    --ldm-accent: #e0915f;
+    --ldm-accent-fg: #1b1916;
+    --ldm-cell: #2b2823;
+    --ldm-grid: #46413a;
+    --ldm-grid-major: #7d756a;
+    --ldm-ink: #ece7df;
+  }
+}
+:root[data-theme="dark"] .ldm {
+  --ldm-fg: #ece7df;
+  --ldm-muted: #a69e92;
+  --ldm-bg: #1b1916;
+  --ldm-surface: #25221e;
+  --ldm-line: #3b3731;
+  --ldm-accent: #e0915f;
+  --ldm-accent-fg: #1b1916;
+  --ldm-cell: #2b2823;
+  --ldm-grid: #46413a;
+  --ldm-grid-major: #7d756a;
+  --ldm-ink: #ece7df;
+}
+
+.ldm *, .ldm *::before, .ldm *::after { box-sizing: border-box; }
+.ldm [hidden] { display: none !important; }
+.ldm a { color: var(--ldm-accent); }
+
+.ldm button, .ldm .ldm-button, .ldm select, .ldm input {
+  font: inherit;
+  color: var(--ldm-fg);
+  background: var(--ldm-surface);
+  border: 1px solid var(--ldm-line);
+  border-radius: var(--ldm-radius);
+  padding: 0.35rem 0.6rem;
+}
+.ldm button, .ldm .ldm-button { cursor: pointer; text-decoration: none; display: inline-block; }
+.ldm button:hover, .ldm .ldm-button:hover { border-color: var(--ldm-muted); }
+.ldm :focus-visible { outline: 2px solid var(--ldm-accent); outline-offset: 2px; }
+
+/* Filters */
+.ldm-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.ldm-filters label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; color: var(--ldm-muted); }
+.ldm-filters select, .ldm-filters input { width: 100%; min-width: 0; }
+.ldm-filters .ldm-search { grid-column: 1 / -1; }
+.ldm-status { color: var(--ldm-muted); margin: 0 0 0.75rem; }
+
+/* Results */
+.ldm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 1rem;
+}
+.ldm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.6rem;
+  background: var(--ldm-surface);
+  border: 1px solid var(--ldm-line);
+  border-radius: var(--ldm-radius);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+.ldm-card:hover { border-color: var(--ldm-muted); }
+.ldm-thumb {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.4rem;
+  overflow: hidden;
+}
+.ldm-thumb canvas { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
+.ldm-thumb canvas.ldm-missing { display: none; }
+.ldm-card-title { font-weight: 600; }
+.ldm-card-names { font-style: italic; }
+.ldm-card-meta, .ldm-card-book { font-size: 0.8rem; color: var(--ldm-muted); }
+.ldm-card-book { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ldm-more { display: block; margin: 1.25rem auto 0; }
+
+/* Detail */
+.ldm-detail h2 { margin: 0.25rem 0; font-size: 1.5rem; }
+.ldm-back { text-decoration: none; }
+.ldm-names { font-style: italic; margin: 0; }
+.ldm-source { color: var(--ldm-muted); margin: 0.25rem 0 0.75rem; }
+.ldm-facts { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: 0 0 1rem; }
+.ldm-facts div { display: flex; flex-direction: column; }
+.ldm-facts dt { font-size: 0.75rem; color: var(--ldm-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ldm-facts dd { margin: 0; }
+.ldm-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.ldm-toolbar [data-zoom] { width: 2.25rem; padding-inline: 0; }
+.ldm-readout { color: var(--ldm-muted); font-size: 0.85rem; min-width: 12rem; }
+.ldm-toolbar .ldm-button { margin-left: auto; background: var(--ldm-accent); color: var(--ldm-accent-fg); border-color: var(--ldm-accent); }
+.ldm-canvas-wrap {
+  overflow: auto;
+  max-height: 80vh;
+  padding: 12px;
+  background: var(--ldm-surface);
+  border: 1px solid var(--ldm-line);
+  border-radius: var(--ldm-radius);
+}
+.ldm-canvas-wrap canvas { display: block; }
+.ldm-notes { color: var(--ldm-muted); font-size: 0.85rem; max-width: 70ch; }
+.ldm-warnings { font-size: 0.85rem; color: var(--ldm-muted); }
