@@ -31,22 +31,25 @@ export function detectGrid(img, { edgeThreshold = 70, trimBorder = true, expecte
   // When a frame line was trimmed, the cloth also has (assumed 1 px) lines
   // between cells, so each cell owns one line's width.
   const line = framed ? 1 : 0;
-  const x = forceCount(grid.x, expectedEnds, bounds.x0, bounds.x1, line);
-  const y = forceCount(grid.y, expectedPicks, bounds.y0, bounds.y1, line);
-  const forced = x !== grid.x || y !== grid.y;
+  const x = forceCount(grid.x, expectedEnds, bounds.x0, bounds.x1, full.x1, line);
+  const y = forceCount(grid.y, expectedPicks, bounds.y0, bounds.y1, full.y1, line);
+  // forced: false, 'count' (detected pitch kept, count corrected) or 'spread'
+  // (cells spread evenly; least reliable).
+  const forced = x.spread || y.spread ? 'spread' : x !== grid.x || y !== grid.y ? 'count' : false;
   return { x, y, bounds, forced, numEnds: x.count, numPicks: y.count };
 }
 
 // Apply a known cell count. The detected pitch and start are usually right
-// even when the count is off (a caption below the cloth counted as cells), so
-// keep them when that many cells fit; otherwise spread the cells evenly.
-function forceCount(axis, expected, lo, hi, line) {
+// even when the count is off (a caption counted as cells, or cloth rows
+// mistaken for caption and cropped), so keep them when that many cells fit in
+// the image; otherwise spread the cells evenly over the cloth.
+function forceCount(axis, expected, lo, hi, imageEnd, line) {
   if (!expected || axis.count === expected) return axis;
   const end = axis.start + expected * axis.pitch;
-  if (axis.start >= lo - axis.pitch / 2 && end <= hi + axis.pitch / 2) {
+  if (axis.start >= lo - axis.pitch / 2 && end <= imageEnd + axis.pitch / 2) {
     return { ...axis, count: expected };
   }
-  return { start: lo - line, pitch: (hi - lo + line) / expected, count: expected };
+  return { start: lo - line, pitch: (hi - lo + line) / expected, count: expected, spread: true };
 }
 
 function fitGrid(img, bounds, edgeThreshold) {

@@ -10,8 +10,8 @@
 //
 // Each output line reports one job:
 //   { "id", "ok", "error"?, "report"?, "forcedGrid"? }
-// A WIF is written only when the derived draft reproduces the image exactly
-// and matches the expected counts.
+// A WIF is written only when the derived draft reproduces the image exactly,
+// matches the expected counts, and the grid didn't have to be spread evenly.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
@@ -40,7 +40,9 @@ async function runJob(job) {
     });
     const countsOk = (!job.expectedEnds || report.ends === job.expectedEnds)
       && (!job.expectedPicks || report.picks === job.expectedPicks);
-    const ok = countsOk && report.mismatches === 0 && report.exactColors;
+    // A grid spread evenly to hit the expected counts can be misaligned and
+    // still "match" (it is compared with its own samples), so don't trust it.
+    const ok = countsOk && report.mismatches === 0 && report.exactColors && grid.forced !== 'spread';
     if (ok && job.wif) {
       Object.assign(draft.meta, job.meta ?? {});
       await mkdir(dirname(job.wif), { recursive: true });

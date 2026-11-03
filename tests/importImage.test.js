@@ -116,6 +116,36 @@ for (const cellSize of [5, 10]) {
   });
 }
 
+test('image import: weft-only last picks above a caption keep their rows when counts are known', () => {
+  // The last picks lift nothing, so the bottom of the cloth is nearly all
+  // weft color and looks like caption; known counts must keep those rows.
+  const original = DRAFTS['point twill (8 shafts)']();
+  original.palette[1] = [255, 255, 255]; // same white as the caption, as on handweaving.net
+  for (let p = original.numPicks - 3; p < original.numPicks; p++) {
+    original.treadling[p] = [];
+    original.weftColors[p] = 1;
+  }
+  const cloth = renderDrawdown(original, { cellSize: 10, gridLine: 1, gridColor: [0, 0, 0] });
+  // handweaving.net outlines floats rather than every cell, so a row of weft
+  // floats has no vertical lines: erase them in the last three picks.
+  const { width, data } = cloth;
+  const top = 1 + (original.numPicks - 3) * 11;
+  for (let y = top; y < cloth.height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const i = (y * width + x) * 4;
+      if (data[i] === 0 && data[i - 4] !== 0) data.set([255, 255, 255, 255], i);
+    }
+  }
+  const img = addFooter(cloth);
+  const { grid, report, draft } = importFromImage(img, { expectedEnds: original.numEnds, expectedPicks: original.numPicks });
+  assert(grid.forced !== 'spread', `grid ${grid.forced}`);
+  assertEqual([report.ends, report.picks], [original.numEnds, original.numPicks]);
+  assertEqual(report.mismatches, 0);
+  const want = screenColors(original);
+  const got = screenColors(draft);
+  want.forEach((row, p) => row.forEach((c, col) => assert(colorDistance(c, got[p][col]) < 40, `cell ${p},${col}`)));
+});
+
 test('image import: handweaving.net drawdown (#12995) with caption', async () => {
   const { report } = importFromImage(await loadImageFixture('real/handweaving-12995.png'));
   assertEqual([report.ends, report.picks], [32, 32], 'grid counts');
