@@ -568,8 +568,17 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl }) {
     if (!dialog.open) dialog.showModal();
   }
 
-  // Open a library draft named in the URL: designer.html#library=hw-12871
+  // Open a library draft named in the URL (designer.html#library=hw-12871), or
+  // one handed over by another page (designer.html#import=1).
   const params = new URLSearchParams(location.hash.slice(1));
+  if (params.has('import')) {
+    history.replaceState(null, '', location.pathname + location.search);
+    const draft = saved.takeImport();
+    if (draft) {
+      loadDraft(draft);
+      status(`Opened “${draft.meta.title || 'Untitled'}”. Undo brings back your previous draft.`);
+    }
+  }
   const libraryId = params.get('library');
   if (libraryId) {
     history.replaceState(null, '', location.pathname + location.search);

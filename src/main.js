@@ -11,6 +11,7 @@ import { mountLibrary } from './ui/library-view.js';
 import { mountEditor } from './ui/editor-view.js';
 import { mountLoomSetup } from './ui/loom-view.js';
 import { mountWarpPlanner } from './ui/warp-view.js';
+import { mountAiHelper } from './ui/ai-view.js';
 
 const defaults = {
   libraryBase: new URL('../library/', import.meta.url).href,
@@ -27,6 +28,7 @@ const views = {
   designer: (el) => mountEditor(el, options(el)),
   loom: (el) => mountLoomSetup(el, options(el)),
   warp: (el) => mountWarpPlanner(el, options(el)),
+  ai: (el) => mountAiHelper(el, options(el)),
 };
 
 for (const el of document.querySelectorAll('[data-loomination]')) {

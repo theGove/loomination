@@ -238,6 +238,37 @@
 .ldm-tight { color: #a56300; }
 .ldm-short { color: var(--ldm-warn); font-weight: 600; }
 
+/* Ask your AI */
+.ldm-ai { max-width: 60rem; }
+.ldm-step { margin: 0 0 1.75rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.ldm-step h2 { font-size: 1.15rem; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.ldm-step h2 span { display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ldm-accent); color: var(--ldm-accent-fg); font-size: 0.9rem; }
+.ldm-step p { margin: 0; }
+.ldm-step > button { align-self: flex-start; }
+.ldm-step details summary { cursor: pointer; color: var(--ldm-muted); font-size: 0.9rem; }
+.ldm-goal-size { grid-template-columns: repeat(3, minmax(0, 10rem)); }
+@media (max-width: 500px) { .ldm-goal-size { grid-template-columns: 1fr 1fr; } }
+.ldm-stash td, .ldm-stash th { text-align: left; vertical-align: middle; }
+.ldm-stash select { max-width: 13rem; }
+.ldm-stash input[type=number] { width: 6rem; }
+.ldm-stash input[type=text] { width: 8rem; }
+.ldm-prompt, .ldm-reply { width: 100%; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.8rem; }
+.ldm-copied { color: var(--ldm-muted); font-size: 0.85rem; }
+.ldm-results { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem; }
+.ldm-rec { display: flex; gap: 1rem; padding: 1rem; background: var(--ldm-surface); border: 1px solid var(--ldm-line); border-radius: var(--ldm-radius); }
+@media (max-width: 560px) { .ldm-rec { flex-direction: column; } }
+.ldm-rec-thumb { flex: 0 0 140px; }
+.ldm-rec-thumb canvas { image-rendering: pixelated; }
+.ldm-rec-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.ldm-rec h3 { margin: 0; font-size: 1.05rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; }
+.ldm-rec p { margin: 0; }
+.ldm-verdict { font-size: 0.75rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid currentColor; }
+.ldm-checks { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+.ldm-checks span { display: inline-block; width: 1.1rem; font-weight: 700; }
+.ldm-ai .ldm-ok, .ldm-verdict.ldm-ok { color: #2e7d32; }
+.ldm-ai .ldm-warn, .ldm-verdict.ldm-warn { color: #a56300; }
+.ldm-ai .ldm-error, .ldm-verdict.ldm-error { color: var(--ldm-warn); }
+
 @media print {
   .site-header, .site-footer, .ldm-loom-form, [data-print] { display: none !important; }
   .ldm-yarn input { border: 0; padding: 0; }

@@ -64,6 +64,21 @@ export function saveDraft(draft, id = null) {
   return entry.id;
 }
 
+// Hand a draft to the designer from another page (designer.html#import=1).
+// The designer opens it as an undoable step instead of overwriting the
+// weaver's work.
+const IMPORT = 'loomination.import';
+export const setImport = (draft) => write(IMPORT, draft);
+export function takeImport() {
+  const d = read(IMPORT);
+  write(IMPORT, null);
+  try {
+    return d ? normalizeDraft(d) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function deleteDraft(id) {
   write(LIST, listDrafts().filter((item) => item.id !== id));
 }
