@@ -7,7 +7,7 @@ import { parseWif } from '../core/wif.js';
 import { buildPrompt, selectCandidates, parseReply, draftFromAi, checkRecommendation } from '../core/ai-prompt.js';
 import { repeatUnit } from '../core/loom.js';
 import { cloneDraft } from '../core/draft.js';
-import { YARNS, yarnById } from '../core/yarns.js';
+import { yarnsByFiber, yarnById } from '../core/yarns.js';
 import { createLibrary } from './library-data.js';
 import { loadLoom } from './loom-profile.js';
 import { setImport } from './saved-drafts.js';
@@ -113,7 +113,7 @@ export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl
   // --- Stash table ---------------------------------------------------------
 
   function renderStash() {
-    const options = (sel) => `${YARNS.map((y) => `<option value="${y.id}"${y.id === sel ? ' selected' : ''}>${escapeHtml(y.name)}</option>`).join('')}<option value="custom"${sel === 'custom' ? ' selected' : ''}>Other…</option>`;
+    const options = (sel) => `${yarnsByFiber().map((g) => `<optgroup label="${escapeHtml(g.fiber)}">${g.yarns.map((y) => `<option value="${y.id}"${y.id === sel ? ' selected' : ''}>${escapeHtml(y.name)}</option>`).join('')}</optgroup>`).join('')}<option value="custom"${sel === 'custom' ? ' selected' : ''}>Other…</option>`;
     $('.ldm-stash tbody').innerHTML = state.stash.map((y, i) => `
       <tr data-row="${i}">
         <th scope="row">Y${i + 1}</th>

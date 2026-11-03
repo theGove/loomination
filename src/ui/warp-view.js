@@ -4,7 +4,7 @@
 
 import { repeatUnit, sleyFor } from '../core/loom.js';
 import { planWarp, structureOf, DEFAULT_PROJECT } from '../core/warp-calc.js';
-import { YARNS, yarnById } from '../core/yarns.js';
+import { yarnsByFiber, yarnById } from '../core/yarns.js';
 import { loadPageDraft } from './page-draft.js';
 import { loadLoom } from './loom-profile.js';
 import { escapeHtml } from './html.js';
@@ -44,7 +44,7 @@ export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
   let page = null;
   const loom = loadLoom();
 
-  const yarnOptions = (extra = '') => `${extra}${YARNS.map((y) => `<option value="${y.id}">${escapeHtml(y.name)}</option>`).join('')}<option value="custom">Other (enter yards per pound)</option>`;
+  const yarnOptions = (extra = '') => `${extra}${yarnsByFiber().map((g) => `<optgroup label="${escapeHtml(g.fiber)}">${g.yarns.map((y) => `<option value="${y.id}">${escapeHtml(y.name)}</option>`).join('')}</optgroup>`).join('')}<option value="custom">Other (enter yards per pound)</option>`;
   const num = (name, label, attrs = '') => `<label class="ldm-field">${label} <input type="number" name="${name}" ${attrs}></label>`;
 
   root.classList.add('ldm', 'ldm-loom', 'ldm-warp');

@@ -2,7 +2,7 @@
 // or tube, the kind of yarn, and the core's size and material.
 
 import { coreWeight, yarnOnCore, CORE_MATERIALS, GRAMS_PER_POUND } from '../core/cone.js';
-import { YARNS, yarnById } from '../core/yarns.js';
+import { yarnsByFiber, yarnById } from '../core/yarns.js';
 import { addToStash } from './ai-view.js';
 import { escapeHtml } from './html.js';
 
@@ -35,7 +35,7 @@ function save(state) {
 
 export function mountConeEstimator(root, { aiUrl }) {
   const state = load();
-  const yarnOptions = `${YARNS.map((y) => `<option value="${y.id}">${escapeHtml(y.name)} (${y.ypp.toLocaleString('en-US')} yd/lb)</option>`).join('')}<option value="custom">Other (enter yards per pound)</option>`;
+  const yarnOptions = `${yarnsByFiber().map((g) => `<optgroup label="${escapeHtml(g.fiber)}">${g.yarns.map((y) => `<option value="${y.id}">${escapeHtml(y.name)} (${y.ypp.toLocaleString('en-US')} yd/lb)</option>`).join('')}</optgroup>`).join('')}<option value="custom">Other (enter yards per pound)</option>`;
   const materials = Object.entries(CORE_MATERIALS).map(([k, m]) => `<option value="${k}">${m.name}</option>`).join('');
 
   root.classList.add('ldm', 'ldm-loom', 'ldm-cone');
