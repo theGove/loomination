@@ -19,8 +19,10 @@ ES modules don't load from `file://`, so serve the folder:
 
 or open `tests/index.html` through the local server.
 
-To test real WIF files, put them in `tests/fixtures/real/` and add their file
-names to `tests/fixtures/real/manifest.json`.
+`tests/fixtures/real/` holds third-party sample files (WIFs, drawdown images
+from handweaving.net, etc.) and is ignored by git. To test real WIF files, put
+them there and list their names in `tests/fixtures/real/manifest.json`. Tests
+that need these files are skipped when they're missing.
 
 ## Making WIF files from drawdown images
 

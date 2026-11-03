@@ -8,6 +8,7 @@
     body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; }
     .ok { color: #1a7f37; }
     .fail { color: #cf222e; }
+    .skip { color: #888; }
     pre { margin: 0 0 0.5rem 2rem; white-space: pre-wrap; }
   </style>
 </head>
@@ -22,10 +23,10 @@
     import './importImage.test.js';
 
     const results = document.getElementById('results');
-    const { total, failed } = await run(({ name, ok, error }) => {
+    const { total, failed, skipped } = await run(({ name, ok, error, skipped }) => {
       const line = document.createElement('div');
-      line.className = ok ? 'ok' : 'fail';
-      line.textContent = `${ok ? '✓' : '✗'} ${name}`;
+      line.className = skipped ? 'skip' : ok ? 'ok' : 'fail';
+      line.textContent = `${skipped ? '–' : ok ? '✓' : '✗'} ${name}${skipped ? ` (skipped: ${skipped})` : ''}`;
       results.append(line);
       if (!ok) {
         const pre = document.createElement('pre');
@@ -34,7 +35,7 @@
       }
     });
     const summary = document.getElementById('summary');
-    summary.textContent = `${total - failed}/${total} passed`;
+    summary.textContent = `${total - failed - skipped}/${total} passed${skipped ? `, ${skipped} skipped` : ''}`;
     summary.className = failed ? 'fail' : 'ok';
   </script>
 </body>

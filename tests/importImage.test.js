@@ -1,4 +1,4 @@
-import { test, assert, assertEqual } from './harness.js';
+import { test, assert, assertEqual, loadImageFixture } from './harness.js';
 import { createDraft } from '../src/core/draft.js';
 import { drawdownColors } from '../src/core/drawdown.js';
 import { renderDrawdown, columnToEnd } from '../src/core/render.js';
@@ -92,6 +92,39 @@ for (const [name, make] of Object.entries(DRAFTS)) {
     }
   }
 }
+
+// Add a white band with black "text" blobs under the image, like the caption
+// handweaving.net puts under its drawdowns.
+function addFooter(img, height = 20) {
+  const width = img.width;
+  const data = new Uint8ClampedArray(width * (img.height + height) * 4).fill(255);
+  data.set(img.data);
+  for (let x = 2; x < Math.min(width - 4, 150); x += 5) {
+    const top = img.height + 5 + (x % 3);
+    for (let y = top; y < top + 9; y++) {
+      for (let dx = 0; dx < 2; dx++) data.set([0, 0, 0, 255], (y * width + x + dx) * 4);
+    }
+  }
+  return { width, height: img.height + height, data };
+}
+
+for (const cellSize of [5, 10]) {
+  test(`image import: framed drawdown with a caption underneath, cell ${cellSize}px`, () => {
+    const original = DRAFTS['point twill (8 shafts)']();
+    const img = addFooter(renderDrawdown(original, { cellSize, gridLine: 1, gridColor: [0, 0, 0] }));
+    const { report } = importFromImage(img);
+    assertEqual([report.ends, report.picks], [original.numEnds, original.numPicks], 'grid counts');
+    assertEqual(report.mismatches, 0);
+  });
+}
+
+test('image import: handweaving.net drawdown (#12995) with caption', async () => {
+  const { report } = importFromImage(await loadImageFixture('real/handweaving-12995.png'));
+  assertEqual([report.ends, report.picks], [32, 32], 'grid counts');
+  assertEqual(report.colors, 2);
+  assertEqual(report.mismatches, 0);
+  assert(report.shafts <= 8, `shafts ${report.shafts}`);
+});
 
 test('image import: an all-one-color image gives a valid draft', () => {
   const img = { width: 40, height: 30, data: new Uint8ClampedArray(40 * 30 * 4).fill(200) };

@@ -13,7 +13,22 @@
 import { pixel, colorDistance } from './color.js';
 
 export function detectGrid(img, { edgeThreshold = 70, trimBorder = true } = {}) {
-  const bounds = trimBorder ? trimUniformBorder(img, edgeThreshold) : { x0: 0, y0: 0, x1: img.width, y1: img.height };
+  const full = { x0: 0, y0: 0, x1: img.width, y1: img.height };
+  let bounds = trimBorder ? trimUniformBorder(img, full, edgeThreshold) : full;
+  let grid = fitGrid(img, bounds, edgeThreshold);
+  if (trimBorder) {
+    // A first fit gives the cell size; with it we can tell a frame line with a
+    // caption or footer beyond it from the last row of cells.
+    const framed = cropToFrame(img, bounds, grid, edgeThreshold);
+    if (framed) {
+      bounds = trimUniformBorder(img, framed, edgeThreshold);
+      grid = fitGrid(img, bounds, edgeThreshold);
+    }
+  }
+  return { ...grid, bounds, numEnds: grid.x.count, numPicks: grid.y.count };
+}
+
+function fitGrid(img, bounds, edgeThreshold) {
   const sx = edgeSignal(img, bounds, 'x', edgeThreshold);
   const sy = edgeSignal(img, bounds, 'y', edgeThreshold);
   let x = fitAxis(sx, bounds.x0, bounds.x1);
@@ -33,7 +48,7 @@ export function detectGrid(img, { edgeThreshold = 70, trimBorder = true } = {}) 
     x = refitIfMultiple(x, y.pitch, sx, bounds.x0, bounds.x1);
     y = refitIfMultiple(y, x.pitch, sy, bounds.y0, bounds.y1);
   }
-  return { x, y, bounds, numEnds: x.count, numPicks: y.count };
+  return { x, y };
 }
 
 // Pixel rectangle of a cell: [x0, x1) × [y0, y1).
@@ -46,22 +61,69 @@ export function cellRect(grid, col, row) {
   };
 }
 
-// Strip margins that are one flat color matching the top-left corner.
-function trimUniformBorder(img, threshold) {
-  const corner = pixel(img, 0, 0);
+// Strip margins that are one flat color matching the corner of `b`.
+function trimUniformBorder(img, b, threshold) {
+  const corner = pixel(img, b.x0, b.y0);
   const same = (x, y) => colorDistance(pixel(img, x, y), corner) < threshold;
-  let x0 = 0;
-  let y0 = 0;
-  let x1 = img.width;
-  let y1 = img.height;
+  let { x0, y0, x1, y1 } = b;
   const colUniform = (x) => { for (let y = y0; y < y1; y++) if (!same(x, y)) return false; return true; };
   const rowUniform = (y) => { for (let x = x0; x < x1; x++) if (!same(x, y)) return false; return true; };
   while (x0 < x1 && colUniform(x0)) x0++;
   while (x1 > x0 && colUniform(x1 - 1)) x1--;
   while (y0 < y1 && rowUniform(y0)) y0++;
   while (y1 > y0 && rowUniform(y1 - 1)) y1--;
-  if (x0 >= x1 || y0 >= y1) return { x0: 0, y0: 0, x1: img.width, y1: img.height };
+  if (x0 >= x1 || y0 >= y1) return b;
   return { x0, y0, x1, y1 };
+}
+
+// Cut off captions and footers (e.g. "Handweaving.net #12995" under the
+// drawdown). Many renderers draw a thin frame line around the cloth; if what
+// lies beyond the outermost such line isn't about one cell thick, it isn't a
+// row of cells, so drop it. Returns new bounds, or null if nothing changed.
+function cropToFrame(img, b, grid, threshold) {
+  const out = { ...b };
+  const rows = thinLines(img, out, 'y', threshold);
+  [out.y0, out.y1] = cropSides(rows, out.y0, out.y1, grid.y.pitch);
+  const cols = thinLines(img, out, 'x', threshold);
+  [out.x0, out.x1] = cropSides(cols, out.x0, out.x1, grid.x.pitch);
+  const changed = out.x0 !== b.x0 || out.x1 !== b.x1 || out.y0 !== b.y0 || out.y1 !== b.y1;
+  return changed ? out : null;
+}
+
+function cropSides(lines, lo, hi, pitch) {
+  const notACell = (margin) => margin > 1.5 * pitch || (margin > 0 && margin < 0.5 * pitch);
+  // A line can only be the frame on the side it's nearer to.
+  const mid = (lo + hi) / 2;
+  const first = lines.find((l) => l.end <= mid);
+  const last = lines.findLast((l) => l.start >= mid);
+  return [
+    first && notACell(first.start - lo) ? first.start : lo,
+    last && notACell(hi - last.end) ? last.end : hi,
+  ];
+}
+
+// Runs of at most 3 pixel rows (or columns) that are one solid color across
+// the whole of `b`, with something different on both sides. Returns
+// [{ start, end }] (end exclusive), in order.
+function thinLines(img, b, axis, threshold) {
+  const [lo, hi, crossLo, crossHi] = axis === 'y' ? [b.y0, b.y1, b.x0, b.x1] : [b.x0, b.x1, b.y0, b.y1];
+  const at = (i, c) => (axis === 'y' ? pixel(img, c, i) : pixel(img, i, c));
+  const solidColor = (i) => {
+    const first = at(i, crossLo);
+    for (let c = crossLo + 1; c < crossHi; c++) if (colorDistance(at(i, c), first) >= threshold) return null;
+    return first;
+  };
+  const lines = [];
+  let i = lo;
+  while (i < hi) {
+    const color = solidColor(i);
+    if (!color) { i++; continue; }
+    let j = i + 1;
+    while (j < hi && solidColor(j) && colorDistance(solidColor(j), color) < threshold) j++;
+    if (j - i <= 3 && i > lo && j < hi) lines.push({ start: i, end: j });
+    i = j;
+  }
+  return lines;
 }
 
 // signal[i] = number of lines across which the color changes between pixel

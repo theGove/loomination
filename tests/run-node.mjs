@@ -4,9 +4,9 @@ import './core.test.js';
 import './wif.test.js';
 import './importImage.test.js';
 
-const { total, failed } = await run(({ name, ok, error }) => {
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}`);
+const { total, failed, skipped } = await run(({ name, ok, error, skipped }) => {
+  console.log(`${skipped ? 'skip' : ok ? 'ok  ' : 'FAIL'} ${name}${skipped ? ` (${skipped})` : ''}`);
   if (!ok) console.log(`     ${error.message}`);
 });
-console.log(`\n${total - failed}/${total} passed`);
+console.log(`\n${total - failed - skipped}/${total} passed${skipped ? `, ${skipped} skipped` : ''}`);
 process.exitCode = failed ? 1 : 0;
