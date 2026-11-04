@@ -119,6 +119,27 @@ export function watchSync(T) {
   });
 }
 
+// What the weaver clicked and where focus went, so a freeze can be matched to
+// the action just before it. Text typed is never recorded.
+function describe(el) {
+  if (!(el instanceof Element)) return String(el);
+  const tag = el.tagName.toLowerCase();
+  const name = el.getAttribute('name') || el.dataset.act || el.dataset.zoom || '';
+  const text = ['button', 'a', 'summary', 'option'].includes(tag) ? (el.textContent || '').trim().slice(0, 30) : '';
+  return [tag, name && `[${name}]`, text && `"${text}"`].filter(Boolean).join(' ');
+}
+
+function watchInput() {
+  addEventListener('pointerdown', (e) => log('click', describe(e.target)), true);
+  addEventListener('change', (e) => {
+    const el = e.target;
+    const value = el.tagName === 'SELECT' || el.type === 'checkbox' ? ` = ${el.type === 'checkbox' ? el.checked : el.value}` : '';
+    log('click', `changed ${describe(el)}${value}`);
+  }, true);
+  addEventListener('blur', (e) => { if (e.target === window) log('click', 'window lost focus'); }, true);
+  addEventListener('focus', (e) => { if (e.target === window) log('click', 'window got focus'); }, true);
+}
+
 // Teather talks to its server with fetch(); time each call.
 function watchFetch() {
   const real = globalThis.fetch;
@@ -212,6 +233,7 @@ export function start() {
   log('page', `open ${location.pathname}${location.hash}`, `${navigator.userAgent}${nav}`);
   log('storage', storageSummary());
   watchFetch();
+  watchInput();
 
   addEventListener('pagehide', () => {
     log('page', `closed ${location.pathname}`);

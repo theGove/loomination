@@ -49,7 +49,10 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
 
   const fill = () => {
     // Before anything is saved, the picker shows the default loom being edited.
-    form.chosen.innerHTML = loomOptions(loom.id ? looms : [loom], loom.id);
+    // Rebuild the picker only when its list changed: replacing a <select>'s
+    // options while its dropdown is closing (in its own change event) is a
+    // suspect in a Chrome tab freezing and running out of memory.
+    setPicker(loom.id ? looms : [loom]);
     form.querySelector('[data-act=delete]').hidden = !loom.id;
     form.name.value = loom.name;
     form.type.value = loom.type;
@@ -62,6 +65,15 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
     root.querySelectorAll('[data-floor]').forEach((el) => { el.hidden = loom.type !== 'floor'; });
   };
   fill();
+
+  function setPicker(list) {
+    const options = loomOptions(list, null);
+    if (form.chosen.dataset.options !== options) {
+      form.chosen.innerHTML = options;
+      form.chosen.dataset.options = options;
+    }
+    form.chosen.value = loom.id;
+  }
 
   form.addEventListener('input', (e) => {
     if (e.target.name === 'chosen') return;
@@ -82,17 +94,18 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
     if (isNew) chooseLoom(loom.id);
     looms = [...looms.filter((l) => l.id !== loom.id), loom];
     if (isNew) {
-      form.chosen.innerHTML = loomOptions(looms, loom.id);
+      setPicker(looms);
       form.querySelector('[data-act=delete]').hidden = false;
     } else if (e.target.name === 'name') {
       form.chosen.selectedOptions[0].textContent = loom.name;
+      form.chosen.dataset.options = loomOptions(looms, null);
     }
     render();
   });
   form.chosen.addEventListener('change', () => {
     chooseLoom(form.chosen.value);
     loom = loadLoom(looms);
-    log('loom', `chose ${loom.name}: ${loom.shafts} shafts, ${loom.treadles} treadles, ${loom.type}`);
+    log('loom', `chose ${loom.name}`, loom);
     fill();
     render();
   });
