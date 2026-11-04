@@ -1,22 +1,18 @@
-// The weaver's loom, remembered in this browser. Shared by the loom setup and
-// warp planner pages.
+// The weaver's loom, remembered in this browser and synced to their Google
+// Drive when they sign in (see sync.js). Shared by the loom setup and warp
+// planner pages.
 
-const LOOM_KEY = 'loomination.loom';
+import * as sync from './sync.js';
+
+const LOOM_KEY = 'loom';
 
 export const DEFAULT_LOOM = { type: 'floor', shafts: 4, treadles: 6, shed: 'jack', reeds: [8, 10, 12], epi: 0, widthIn: 0 };
 
 export function loadLoom() {
-  try {
-    return { ...DEFAULT_LOOM, ...JSON.parse(localStorage.getItem(LOOM_KEY) || '{}') };
-  } catch {
-    return { ...DEFAULT_LOOM };
-  }
+  const saved = sync.get(LOOM_KEY);
+  return { ...DEFAULT_LOOM, ...(saved && typeof saved === 'object' ? saved : {}) };
 }
 
 export function saveLoom(loom) {
-  try {
-    localStorage.setItem(LOOM_KEY, JSON.stringify(loom));
-  } catch {
-    // Not saved; the page still works for this visit.
-  }
+  sync.set(LOOM_KEY, loom);
 }

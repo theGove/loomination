@@ -568,6 +568,10 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
     }
     if (!dialog.open) dialog.showModal();
   }
+  // Keep an open "My drafts" list current when another computer or tab saves.
+  saved.onDraftsChange(() => {
+    if (dialog.open) showMine();
+  });
 
   // Open a library draft named in the URL (designer.html#library=hw-12871), or
   // one handed over by another page (designer.html#import=1).

@@ -13,6 +13,8 @@ import { mountLoomSetup } from './ui/loom-view.js';
 import { mountWarpPlanner } from './ui/warp-view.js';
 import { mountAiHelper } from './ui/ai-view.js';
 import { mountConeEstimator } from './ui/cone-view.js';
+import * as sync from './ui/sync.js';
+import { mountAccount } from './ui/account.js';
 
 const defaults = {
   libraryBase: new URL('../library/', import.meta.url).href,
@@ -35,6 +37,20 @@ const views = {
   ai: (el) => mountAiHelper(el, options(el)),
   cone: (el) => mountConeEstimator(el, options(el)),
 };
+
+// Saved data: move anything from older versions, show the sign-in control on
+// loomination.org pages, and wait (briefly) for the first sync so views start
+// from the weaver's latest data.
+sync.migrateLegacy();
+const header = document.querySelector('.site-header');
+if (header) {
+  try {
+    mountAccount(header);
+  } catch (err) {
+    console.warn('Loomination: account control failed', err);
+  }
+}
+await sync.ready(3000);
 
 for (const el of document.querySelectorAll('[data-loomination]')) {
   const mount = views[el.dataset.loomination];

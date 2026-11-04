@@ -1,6 +1,6 @@
 // Warp planner: how many ends, how long a warp, and how much yarn of each
-// color, for a project woven from one draft. Inputs are remembered in this
-// browser; the arithmetic lives in core/warp-calc.js.
+// color, for a project woven from one draft. Inputs are remembered (and synced
+// when signed in; see sync.js); the arithmetic lives in core/warp-calc.js.
 
 import { repeatUnit, sleyFor } from '../core/loom.js';
 import { planWarp, structureOf, DEFAULT_PROJECT } from '../core/warp-calc.js';
@@ -8,8 +8,9 @@ import { yarnsByFiber, yarnById } from '../core/yarns.js';
 import { loadPageDraft } from './page-draft.js';
 import { loadLoom } from './loom-profile.js';
 import { escapeHtml } from './html.js';
+import * as sync from './sync.js';
 
-const PLAN_KEY = 'loomination.warpPlan';
+const PLAN_KEY = 'warpPlan';
 const DEFAULTS = {
   ...DEFAULT_PROJECT,
   warpYarn: 'cotton-8-2',
@@ -24,19 +25,12 @@ const DEFAULTS = {
 const PERCENT = ['drawIn', 'shrinkWidth', 'takeUp', 'shrinkLength', 'weftTakeUp'];
 
 function loadInputs() {
-  try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(PLAN_KEY) || '{}') };
-  } catch {
-    return { ...DEFAULTS };
-  }
+  const saved = sync.get(PLAN_KEY);
+  return { ...DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}) };
 }
 
 function saveInputs(inputs) {
-  try {
-    localStorage.setItem(PLAN_KEY, JSON.stringify(inputs));
-  } catch {
-    // Not remembered; fine for this visit.
-  }
+  sync.set(PLAN_KEY, inputs);
 }
 
 export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {

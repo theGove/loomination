@@ -5,8 +5,9 @@ import { coreWeight, yarnOnCore, CORE_MATERIALS, GRAMS_PER_POUND } from '../core
 import { yarnsByFiber, yarnById } from '../core/yarns.js';
 import { addToStash } from './ai-view.js';
 import { escapeHtml } from './html.js';
+import * as sync from './sync.js';
 
-const KEY = 'loomination.cone';
+const KEY = 'cone';
 const DEFAULTS = {
   yarn: 'cotton-8-2', ypp: 0,
   weight: 500, weightUnit: 'g',
@@ -18,19 +19,12 @@ const TO_GRAMS = { g: 1, oz: GRAMS_PER_POUND / 16, lb: GRAMS_PER_POUND };
 const TO_CM = { in: 2.54, cm: 1 };
 
 function load() {
-  try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
-  } catch {
-    return { ...DEFAULTS };
-  }
+  const saved = sync.get(KEY);
+  return { ...DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}) };
 }
 
 function save(state) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    // Not remembered; fine for this visit.
-  }
+  sync.set(KEY, state);
 }
 
 export function mountConeEstimator(root, { aiUrl }) {

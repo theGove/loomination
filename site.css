@@ -12,3 +12,19 @@ body { margin: 0; background: #fbf9f5; }
 .site-header nav small { font-size: 0.75rem; }
 .site-footer { color: var(--ldm-muted); font-size: 0.8rem; padding-block: 2rem; }
 @media print { body { background: #fff; } }
+
+/* "Save to Google Drive" (src/ui/account.js) */
+.ldm-account { margin-left: auto; align-self: center; position: relative; font-size: 0.9rem; }
+.ldm-account-signin { font: inherit; cursor: pointer; padding: 0.35em 0.8em; border-radius: var(--ldm-radius); border: 1px solid var(--ldm-line); background: var(--ldm-surface); color: var(--ldm-fg); }
+.ldm-account-signin:hover { border-color: var(--ldm-muted); }
+.ldm-account-signin:disabled { opacity: 0.6; cursor: default; }
+.ldm-account summary { list-style: none; cursor: pointer; position: relative; display: block; border-radius: 50%; }
+.ldm-account summary::-webkit-details-marker { display: none; }
+.ldm-account img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: block; background: var(--ldm-line); }
+.ldm-account-dot { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--ldm-bg); background: #3a8f5c; }
+.ldm-account[data-status="syncing"] .ldm-account-dot { background: #c9a227; }
+.ldm-account[data-status="offline"] .ldm-account-dot, .ldm-account[data-status="error"] .ldm-account-dot { background: var(--ldm-muted); }
+.ldm-account-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 15rem; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 0.35rem; padding: 0.75rem; background: var(--ldm-surface); border: 1px solid var(--ldm-line); border-radius: var(--ldm-radius); box-shadow: 0 6px 20px rgb(0 0 0 / 0.15); }
+.ldm-account-menu small { color: var(--ldm-muted); overflow-wrap: anywhere; }
+.ldm-account-menu small:empty { display: none; }
+.ldm-account-menu button { font: inherit; cursor: pointer; align-self: flex-start; margin-top: 0.25rem; padding: 0.3em 0.8em; border-radius: var(--ldm-radius); border: 1px solid var(--ldm-line); background: var(--ldm-bg); color: var(--ldm-fg); }

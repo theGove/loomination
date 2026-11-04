@@ -13,8 +13,9 @@ import { loadLoom } from './loom-profile.js';
 import { setImport } from './saved-drafts.js';
 import { paintThumbnail } from './draft-view.js';
 import { escapeHtml } from './html.js';
+import * as sync from './sync.js';
 
-const KEY = 'loomination.ai';
+const KEY = 'ai';
 const DEFAULTS = {
   goal: { text: '', finishedWidth: 18, finishedLength: 28, pieces: 4 },
   stash: [
@@ -26,20 +27,13 @@ const DEFAULTS = {
 };
 
 function load() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
-    return { ...DEFAULTS, ...saved, goal: { ...DEFAULTS.goal, ...saved.goal } };
-  } catch {
-    return structuredClone(DEFAULTS);
-  }
+  const saved = sync.get(KEY);
+  if (!saved || typeof saved !== 'object') return structuredClone(DEFAULTS);
+  return { ...structuredClone(DEFAULTS), ...saved, goal: { ...DEFAULTS.goal, ...saved.goal } };
 }
 
 function save(state) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    // Not remembered; fine for this visit.
-  }
+  sync.set(KEY, state);
 }
 
 // Add a yarn to the saved stash from another page (the cone estimator).
