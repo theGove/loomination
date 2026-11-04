@@ -7,6 +7,7 @@
 import { planForLoom, runs, sleyFor } from '../core/loom.js';
 import { loadPageDraft } from './page-draft.js';
 import { escapeHtml } from './html.js';
+import { log, timed } from './debug.js';
 import { listLooms, loadLoom, saveLoom, chooseLoom, deleteLoom, unusedName, loomOptions, DEFAULT_LOOM } from './loom-profile.js';
 
 export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
@@ -91,6 +92,7 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
   form.chosen.addEventListener('change', () => {
     chooseLoom(form.chosen.value);
     loom = loadLoom(looms);
+    log('loom', `chose ${loom.name}: ${loom.shafts} shafts, ${loom.treadles} treadles, ${loom.type}`);
     fill();
     render();
   });
@@ -125,7 +127,7 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
 
   function render() {
     if (!draft) return;
-    const plan = planForLoom(draft, loom);
+    const plan = timed('loom', `plan for ${loom.shafts}-shaft ${loom.type} loom, ${loom.treadles} treadles`, () => planForLoom(draft, loom));
     const title = draft.meta.title || 'Untitled draft';
     const editLink = designerUrl
       ? `<a href="${escapeHtml(libraryId ? `${designerUrl}#library=${encodeURIComponent(libraryId)}` : designerUrl)}">${libraryId ? 'Open in designer' : 'Edit in designer'}</a>`

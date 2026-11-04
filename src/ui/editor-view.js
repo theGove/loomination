@@ -13,6 +13,7 @@ import { createStore } from './store.js';
 import { createLibrary } from './library-data.js';
 import { layoutDraft, paintDraft, hitTest } from './draft-view.js';
 import * as saved from './saved-drafts.js';
+import { timed } from './debug.js';
 
 export function starterDraft() {
   let d = createDraft({ shafts: 4, treadles: 4, numEnds: 32, numPicks: 32, palette: [[246, 241, 228], [38, 70, 120]] });
@@ -160,7 +161,7 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
       const draft = store.get();
       if (!ui.cell) ui.cell = fitCell(draft);
       clampSelection(draft);
-      layout = paintDraft(canvas, draft, ui);
+      layout = timed('designer', `draw ${draft.numEnds}×${draft.numPicks} draft`, () => paintDraft(canvas, draft, ui));
       syncPanel(draft);
     });
   };

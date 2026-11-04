@@ -91,9 +91,13 @@ function pressFor(lift, columns) {
 // Find a skeleton tie-up: at most `maxTreadles` treadles such that every lift
 // is one treadle or two pressed together. Depth-first search over candidate
 // treadles drawn from the lifts and their pairwise intersections and
-// differences, with a node budget so it always returns quickly. Returns the
-// columns or null.
-export function skeletonTieup(lifts, maxTreadles, budget = 50000) {
+// differences, with a node budget and a time limit so it always returns
+// quickly. (Building each node's options can itself take long on drafts with
+// many shafts and sheds: the node budget alone let the loom page freeze for
+// up to 7 seconds per keystroke.) Returns the columns or null.
+export function skeletonTieup(lifts, maxTreadles, budget = 50000, timeLimitMs = 250) {
+  const deadline = performance.now() + timeLimitMs;
+  const outOfTime = () => performance.now() > deadline;
   const distinct = [...new Map(lifts.filter((l) => l.length).map((l) => [key(l), l])).values()];
   const pool = new Map(distinct.map((l) => [key(l), l]));
   for (const a of distinct) {
@@ -109,7 +113,7 @@ export function skeletonTieup(lifts, maxTreadles, budget = 50000) {
   let nodes = 0;
 
   function search(columns) {
-    if (++nodes > budget) return null;
+    if (++nodes > budget || outOfTime()) return null;
     const need = distinct.find((l) => !pressFor(l, columns));
     if (!need) return columns;
     if (columns.length >= maxTreadles) return null;
@@ -123,6 +127,7 @@ export function skeletonTieup(lifts, maxTreadles, budget = 50000) {
       if (columns.some((x) => x.every((s) => need.includes(s)) && rest.every((s) => x.includes(s)))) options.push([c]);
     }
     for (const c of subsets) {
+      if (outOfTime()) return null;
       const rest = need.filter((s) => !c.includes(s));
       if (!rest.length) continue;
       for (const d of subsets) {

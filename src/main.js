@@ -14,6 +14,7 @@ import { mountWarpPlanner } from './ui/warp-view.js';
 import { mountAiHelper } from './ui/ai-view.js';
 import { mountConeEstimator } from './ui/cone-view.js';
 import * as sync from './ui/sync.js';
+import * as debug from './ui/debug.js';
 import { mountAccount } from './ui/account.js';
 
 const defaults = {
@@ -42,6 +43,7 @@ const views = {
 // load, show the sign-in control on loomination.org pages, and wait (briefly)
 // for the first sync so views start from the weaver's latest data. Both waits
 // are capped, so a slow teather.pages.dev delays the page by seconds at most.
+debug.start();
 sync.migrateLegacy();
 await sync.loaded(2000);
 const header = document.querySelector('.site-header');
@@ -56,6 +58,6 @@ await sync.ready(3000);
 
 for (const el of document.querySelectorAll('[data-loomination]')) {
   const mount = views[el.dataset.loomination];
-  if (mount) mount(el);
+  if (mount) debug.timed('page', `show ${el.dataset.loomination}`, () => mount(el));
   else console.warn(`Loomination: unknown view "${el.dataset.loomination}"`);
 }

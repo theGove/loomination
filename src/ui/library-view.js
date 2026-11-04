@@ -9,6 +9,7 @@ import { parseWif } from '../core/wif.js';
 import { createLibrary, filterDrafts, filterFromParams, filterToParams, DEFAULT_FILTER } from './library-data.js';
 import { layoutDraft, paintDraft, paintThumbnail, hitTest } from './draft-view.js';
 import { escapeHtml } from './html.js';
+import { log, timed } from './debug.js';
 
 const PAGE_SIZE = 60;
 
@@ -167,6 +168,7 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl 
     }
     if (new URLSearchParams(location.hash.slice(1)).get('draft') !== id) return;
     const { draft, warnings } = result;
+    log('library', `opened ${id}: ${draft.shafts} shafts, ${draft.numEnds} ends × ${draft.numPicks} picks`);
     const row = (await lib.drafts()).find((d) => d.id === id);
     const book = row && books.get(row.book);
     const meta = draft.meta;
@@ -209,7 +211,7 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl 
     const room = wrap.parentElement.clientWidth - 26; // wrap padding + border
     let cell = 16;
     while (cell > 4 && layoutDraft(draft, cell).width > room) cell--;
-    let layout = paintDraft(canvas, draft, { cell });
+    let layout = timed('library', `draw ${id}`, () => paintDraft(canvas, draft, { cell }));
 
     detail.querySelectorAll('[data-zoom]').forEach((btn) => btn.addEventListener('click', () => {
       cell = clamp(cell + Number(btn.dataset.zoom) * (cell >= 8 ? 2 : 1), 2, 32);

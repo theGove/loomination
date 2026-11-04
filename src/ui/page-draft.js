@@ -5,13 +5,22 @@ import { parseWif } from '../core/wif.js';
 import { createLibrary } from './library-data.js';
 import { loadCurrent } from './saved-drafts.js';
 import { starterDraft } from './editor-view.js';
+import { log } from './debug.js';
 
 // Resolves to { draft, source, libraryId }.
 export async function loadPageDraft(libraryBase) {
   const libraryId = new URLSearchParams(location.hash.slice(1)).get('library');
   if (libraryId) {
     const text = await createLibrary(libraryBase).wifText(libraryId);
-    return { draft: parseWif(text).draft, source: `library draft ${libraryId}`, libraryId };
+    const { draft } = parseWif(text);
+    log('draft', `library draft ${libraryId}: ${describe(draft)}`);
+    return { draft, source: `library draft ${libraryId}`, libraryId };
   }
-  return { draft: loadCurrent() ?? starterDraft(), source: 'the draft open in the designer', libraryId: null };
+  const draft = loadCurrent() ?? starterDraft();
+  log('draft', `designer draft "${draft.meta.title || 'untitled'}": ${describe(draft)}`);
+  return { draft, source: 'the draft open in the designer', libraryId: null };
+}
+
+export function describe(draft) {
+  return `${draft.shafts} shafts, ${draft.treadles} treadles, ${draft.numEnds} ends × ${draft.numPicks} picks`;
 }

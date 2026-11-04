@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Debug log · Loomination</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="src/loomination.css">
+  <link rel="stylesheet" href="site.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 4 4%27%3E%3Cpath fill=%27%23263f78%27 d=%27M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM2 0h1v1H2zM3 1h1v1H3zM0 2h1v1H0zM1 3h1v1H1z%27/%3E%3C/svg%3E">
+  <style>
+    .ldm-debug { display: flex; flex-direction: column; gap: 0.75rem; }
+    .ldm-debug-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .ldm-debug td { text-align: left; vertical-align: top; }
+    .ldm-debug td:first-child { white-space: nowrap; color: var(--ldm-muted); }
+    .ldm-debug tr.bad td { background: color-mix(in srgb, var(--ldm-warn) 12%, transparent); }
+  </style>
+</head>
+<body>
+  <div class="ldm">
+    <header class="site-header">
+      <h1><a href="./">Loomination</a></h1>
+      <nav aria-label="Sections">
+        <a href="./">Library</a>
+        <a href="designer.html">Designer</a>
+        <a href="loom.html">Loom setup</a>
+        <a href="warp.html">Warp plan</a>
+        <a href="ai.html">Ask your AI</a>
+        <a href="yarn.html">Yarn on a cone</a>
+      </nav>
+    </header>
+    <main class="ldm-debug">
+      <h2>Debug log</h2>
+      <p class="ldm-hint">What Loomination noted in this browser: pages opened, slow steps, large pictures, memory, errors and crashes. It stays on this computer. If something went wrong, copy it and send it along with what you were doing.</p>
+      <div class="ldm-debug-actions">
+        <button type="button" class="ldm-primary" data-copy>Copy log</button>
+        <button type="button" data-clear>Clear</button>
+        <span class="ldm-hint" aria-live="polite" data-note></span>
+      </div>
+      <div class="ldm-scroll"><table class="ldm-table"><tbody></tbody></table></div>
+    </main>
+  </div>
+  <script type="module">
+    import { entriesForDisplay, clear, checkForCrashes } from './src/ui/debug.js';
+    import { escapeHtml } from './src/ui/html.js';
+
+    const BAD = /error|stuck|did not end|failed/;
+    const time = (t) => new Date(t).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' });
+    const line = (e) => `${new Date(e.t).toISOString()} [${e.s}] ${e.area}: ${e.msg}${e.mb !== undefined ? ` (${e.mb} MB)` : ''}${e.extra !== undefined ? ` | ${typeof e.extra === 'string' ? e.extra : JSON.stringify(e.extra)}` : ''}`;
+
+    function render() {
+      const list = entriesForDisplay().reverse();
+      document.querySelector('tbody').innerHTML = list.length
+        ? list.map((e) => `<tr class="${BAD.test(e.area + ' ' + e.msg) ? 'bad' : ''}"><td>${escapeHtml(time(e.t))}</td><td>${escapeHtml(e.area)}</td><td>${escapeHtml(e.msg)}${e.mb !== undefined ? ` <span class="ldm-hint">${e.mb} MB</span>` : ''}</td></tr>`).join('')
+        : '<tr><td>The log is empty.</td></tr>';
+    }
+    checkForCrashes();
+    render();
+
+    const note = document.querySelector('[data-note]');
+    document.querySelector('[data-copy]').addEventListener('click', async () => {
+      const text = `Loomination debug log, ${navigator.userAgent}\n${entriesForDisplay().map(line).join('\n')}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        note.textContent = 'Copied.';
+      } catch {
+        note.textContent = 'Your browser blocked copying; select the table and copy it instead.';
+      }
+    });
+    document.querySelector('[data-clear]').addEventListener('click', () => {
+      if (!confirm('Clear the debug log?')) return;
+      clear();
+      render();
+      note.textContent = '';
+    });
+  </script>
+</body>
+</html>

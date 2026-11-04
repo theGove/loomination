@@ -8,6 +8,7 @@
 
 import { drawdown, drawdownColors, floatLengths } from '../core/drawdown.js';
 import { columnToEnd } from '../core/render.js';
+import { log } from './debug.js';
 
 // Pixel rectangles of every region for a given cell size (CSS pixels).
 export function layoutDraft(draft, cell) {
@@ -76,6 +77,9 @@ const MAX_CANVAS_PIXELS = 16_000_000;
 // Size a canvas for a CSS-pixel width/height on a high-DPI screen.
 function sizeCanvas(canvas, width, height) {
   const dpr = Math.min(globalThis.devicePixelRatio || 1, Math.sqrt(MAX_CANVAS_PIXELS / Math.max(1, width * height)));
+  if (width * height * dpr * dpr > 4_000_000) {
+    log('canvas', `${Math.round(width)}×${Math.round(height)} px canvas at ${dpr.toFixed(2)}× (${Math.round(width * height * dpr * dpr * 4 / 1e6)} MB)`);
+  }
   canvas.width = Math.max(1, Math.round(width * dpr));
   canvas.height = Math.max(1, Math.round(height * dpr));
   canvas.style.width = `${width}px`;
@@ -254,15 +258,20 @@ export function paintDraft(canvas, draft, { cell = 10, view = 'color', floatLimi
 
 // Small preview of the face of the cloth, fitted within maxSize CSS pixels.
 export function paintThumbnail(canvas, draft, maxSize = 160) {
-  const cell = Math.max(1, Math.floor(maxSize / Math.max(draft.numEnds, draft.numPicks, 1)));
-  const width = draft.numEnds * cell;
-  const height = draft.numPicks * cell;
-  const ctx = sizeCanvas(canvas, width, height);
+  const biggest = Math.max(draft.numEnds, draft.numPicks, 1);
+  const cell = Math.max(1, Math.floor(maxSize / biggest));
+  // A draft with more threads than the thumbnail has pixels shows every
+  // step-th thread, so the canvas stays thumbnail-sized (a 1744-thread draft
+  // used to make a 49 MB thumbnail).
+  const step = Math.ceil(biggest / maxSize);
+  const cols = Math.ceil(draft.numEnds / step);
+  const rows = Math.ceil(draft.numPicks / step);
+  const ctx = sizeCanvas(canvas, cols * cell, rows * cell);
   const colors = drawdownColors(draft);
-  for (let row = 0; row < draft.numPicks; row++) {
-    for (let col = 0; col < draft.numEnds; col++) {
-      ctx.fillStyle = css(colors[row][columnToEnd(draft, col)]);
-      ctx.fillRect(col * cell, row * cell, cell, cell);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      ctx.fillStyle = css(colors[r * step][columnToEnd(draft, c * step)]);
+      ctx.fillRect(c * cell, r * cell, cell, cell);
     }
   }
 }
