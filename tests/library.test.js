@@ -31,6 +31,7 @@ test('shardsFor keeps only shards a loom can weave', () => {
   const summary = { shards: { '02': 5, '04': 9, '08': 3, '16': 1 } };
   assertEqual(shardsFor(summary, 4), ['02', '04']);
   assertEqual(shardsFor(summary), ['02', '04', '08', '16']);
+  assertEqual(shardsFor(summary, 8, 4), ['04', '08']);
 });
 
 test('default sort is oldest book first, then figures in natural order', () => {
@@ -40,6 +41,8 @@ test('default sort is oldest book first, then figures in natural order', () => {
 test('filters by shafts, treadles, threading and float', () => {
   assertEqual(ids(filterDrafts(drafts, { maxShafts: 4 }, books)), ['hw-305', 'hw-2', 'hw-10']);
   assertEqual(ids(filterDrafts(drafts, { maxShafts: 4, maxTreadles: 4 }, books)), ['hw-305', 'hw-10']);
+  assertEqual(ids(filterDrafts(drafts, { minShafts: 4 }, books)), ['hw-7', 'hw-2', 'hw-10']);
+  assertEqual(ids(filterDrafts(drafts, { minShafts: 4, maxShafts: 4 }, books)), ['hw-2', 'hw-10']);
   assertEqual(ids(filterDrafts(drafts, { threading: 'point' }, books)), ['hw-2']);
   assertEqual(ids(filterDrafts(drafts, { maxFloat: 3 }, books)), ['hw-305', 'hw-10']);
   assertEqual(ids(filterDrafts(drafts, { book: 1 }, books)), ['hw-2', 'hw-10']);

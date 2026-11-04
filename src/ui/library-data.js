@@ -24,15 +24,16 @@ export function draftPath(id) {
   return `drafts/${digits.slice(-2).padStart(2, '0')}/${id}.wif`;
 }
 
-// Shard keys ("02", "03", ...) needed to show drafts of at most maxShafts.
-export function shardsFor(summary, maxShafts = Infinity) {
+// Shard keys ("02", "03", ...) needed to show drafts of minShafts to maxShafts.
+export function shardsFor(summary, maxShafts = Infinity, minShafts = 0) {
   return Object.keys(summary.shards)
-    .filter((key) => Number(key) <= maxShafts)
+    .filter((key) => Number(key) <= maxShafts && Number(key) >= minShafts)
     .sort((a, b) => Number(a) - Number(b));
 }
 
 export const DEFAULT_FILTER = {
   query: '',
+  minShafts: 0,       // 0 = any
   maxShafts: 0,       // 0 = any
   maxTreadles: 0,     // 0 = any
   book: 0,            // books.json id, 0 = any
@@ -46,6 +47,7 @@ export function filterDrafts(drafts, filter, books = new Map()) {
   const f = { ...DEFAULT_FILTER, ...filter };
   const words = f.query.toLowerCase().split(/\s+/).filter(Boolean);
   const out = drafts.filter((d) => {
+    if (f.minShafts && d.shafts < f.minShafts) return false;
     if (f.maxShafts && d.shafts > f.maxShafts) return false;
     if (f.maxTreadles && d.treadles > f.maxTreadles) return false;
     if (f.book && d.book !== f.book) return false;
@@ -111,8 +113,8 @@ export function createLibrary(base, fetchImpl = (url) => fetch(url)) {
   return {
     summary: () => (summaryPromise ??= json('index/summary.json')),
     books: () => (booksPromise ??= json('books.json').then((list) => new Map(list.map((b) => [b.id, b])))),
-    async drafts(maxShafts = Infinity) {
-      const keys = shardsFor(await this.summary(), maxShafts);
+    async drafts(maxShafts = Infinity, minShafts = 0) {
+      const keys = shardsFor(await this.summary(), maxShafts, minShafts);
       const shards = await Promise.all(keys.map((key) => {
         if (!shardCache.has(key)) shardCache.set(key, json(`index/shafts-${key}.json`).then(decodeShard));
         return shardCache.get(key);

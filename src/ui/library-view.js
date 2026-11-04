@@ -26,7 +26,8 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl 
       <label class="ldm-search">Search
         <input type="search" name="query" placeholder="Title, name, book or author">
       </label>
-      <label>Shafts <select name="maxShafts"></select></label>
+      <label>Min shafts <select name="minShafts"></select></label>
+      <label>Max shafts <select name="maxShafts"></select></label>
       <label>Treadles <select name="maxTreadles"></select></label>
       <label>Threading <select name="threading">
         <option value="">Any</option><option value="straight">Straight draw</option><option value="point">Point draw</option>
@@ -75,7 +76,9 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl 
   const ready = Promise.all([lib.summary(), lib.books()]).then(([summary, bookMap]) => {
     books = bookMap;
     const maxShafts = Math.max(...Object.keys(summary.shards).map(Number));
-    options(form.maxShafts, [[0, 'Any'], ...range(2, Math.max(maxShafts, 2)).map((n) => [n, `Up to ${n}`])]);
+    const shaftCounts = range(2, Math.max(maxShafts, 2));
+    options(form.minShafts, [[0, 'Any'], ...shaftCounts.map((n) => [n, `At least ${n}`])]);
+    options(form.maxShafts, [[0, 'Any'], ...shaftCounts.map((n) => [n, `Up to ${n}`])]);
     const listed = [...books.values()].filter((b) => b.drafts > 0)
       .sort((a, b) => a.year - b.year || a.title.localeCompare(b.title));
     options(form.book, [[0, 'All books'], ...listed.map((b) => [b.id, `${b.title} (${b.date})`])]);
@@ -114,7 +117,7 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl 
     listedFor = key;
     status.hidden = false;
     status.textContent = 'Loading…';
-    const drafts = await lib.drafts(filter.maxShafts || Infinity);
+    const drafts = await lib.drafts(filter.maxShafts || Infinity, filter.minShafts);
     if (listedFor !== key) return; // a newer filter took over while loading
     results = filterDrafts(drafts, filter, books);
     status.textContent = results.length === 1 ? '1 draft' : `${results.length.toLocaleString()} drafts`;
