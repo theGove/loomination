@@ -38,10 +38,12 @@ const views = {
   cone: (el) => mountConeEstimator(el, options(el)),
 };
 
-// Saved data: move anything from older versions, show the sign-in control on
-// loomination.org pages, and wait (briefly) for the first sync so views start
-// from the weaver's latest data.
+// Saved data: move anything from older versions, give teather.js a moment to
+// load, show the sign-in control on loomination.org pages, and wait (briefly)
+// for the first sync so views start from the weaver's latest data. Both waits
+// are capped, so a slow teather.pages.dev delays the page by seconds at most.
 sync.migrateLegacy();
+await sync.loaded(2000);
 const header = document.querySelector('.site-header');
 if (header) {
   try {

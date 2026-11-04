@@ -1,11 +1,11 @@
 // Saved settings and "My drafts", synced to the weaver's own Google Drive through
 // Teather (https://teather.pages.dev) when they sign in.
 //
-// Pages load teather.js with `defer` before main.js, so window.Teather is ready
-// before any view mounts. If it didn't load (offline, blocked, embedded in a blog),
-// everything still works from this browser alone: we read and write the same
-// local format Teather uses, so nothing is lost and it syncs on the next visit
-// where Teather loads.
+// Pages load teather.js with `async`, so a slow teather.pages.dev can't stall
+// the page; main.js waits for it briefly (loaded()) before any view mounts. If it
+// didn't load in time (offline, slow, blocked, embedded in a blog), everything
+// works from this browser alone: we read and write the same local format Teather
+// uses, so nothing is lost and it syncs on the next visit where Teather loads.
 
 const ITEM = 'teather:i:'; // Teather's stable v1 local format: {value, updatedAt}
 let teather = null;
@@ -26,6 +26,22 @@ function T() {
     }
   }
   return teather;
+}
+
+/**
+ * Wait up to `ms` for the page's teather.js tag to load. After that the page
+ * carries on without syncing; changes made meanwhile are kept in this browser
+ * and sync on the next visit.
+ */
+export function loaded(ms = 2000) {
+  if (typeof window === 'undefined' || window.Teather) return Promise.resolve();
+  const tag = document.querySelector('script[src*="teather"]');
+  if (!tag) return Promise.resolve();
+  return new Promise((resolve) => {
+    tag.addEventListener('load', resolve, { once: true });
+    tag.addEventListener('error', resolve, { once: true });
+    setTimeout(resolve, ms);
+  });
 }
 
 /** True when Teather loaded, so syncing and sign-in are available. */
