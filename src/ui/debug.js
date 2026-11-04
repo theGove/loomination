@@ -71,6 +71,79 @@ export function timed(area, what, fn) {
 /** Log before a step that might crash the tab, so the log shows what was happening. */
 export const before = (area, what) => log(area, `starting ${what}`);
 
+const kb = (chars) => `${Math.round(chars / 1024)} KB`;
+
+// What this browser has stored: synced items, their total size and the biggest.
+function storageSummary() {
+  try {
+    const sizes = [];
+    let synced = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const size = (localStorage.getItem(k) || '').length;
+      sizes.push([k, size]);
+      if (k.startsWith('teather:i:')) synced++;
+    }
+    const total = sizes.reduce((s, [, n]) => s + n, 0);
+    const biggest = sizes.sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} ${kb(n)}`).join(', ');
+    return `${sizes.length} stored items (${synced} synced), ${kb(total)} in all; biggest: ${biggest}`;
+  } catch (err) {
+    return `storage unreadable: ${err.message}`;
+  }
+}
+
+/** Log calls to Teather's server and its sign-in and sync events. */
+export function watchSync(T) {
+  if (!T) {
+    log('sync', 'Teather not loaded: working from this browser only');
+    return;
+  }
+  const user = T.user();
+  log('sync', `Teather loaded, ${user ? 'signed in' : 'signed out'}, status ${T.status()}`);
+  T.onStatus((s) => log('sync', `status ${s}`));
+  T.onAuthChange((u) => log('sync', u ? 'signed in' : 'signed out'));
+  // Changes from Drive arrive one item at a time; note them in bursts.
+  let remote = 0;
+  let size = 0;
+  let timer = 0;
+  T.onChange((c) => {
+    if (c.source === 'local') return;
+    remote++;
+    try { size += JSON.stringify(c.value ?? null).length; } catch { /* ignore */ }
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      log('sync', `${remote} item${remote === 1 ? '' : 's'} changed from ${c.source} (${kb(size)})`);
+      remote = 0;
+      size = 0;
+    }, 300);
+  });
+}
+
+// Teather talks to its server with fetch(); time each call.
+function watchFetch() {
+  const real = globalThis.fetch;
+  if (typeof real !== 'function') return;
+  globalThis.fetch = function (input, init) {
+    const url = String(input?.url ?? input);
+    if (!url.includes('teather')) return real.apply(this, arguments);
+    const method = init?.method || 'GET';
+    const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/\?.*/, '');
+    const sent = typeof init?.body === 'string' ? `, sent ${kb(init.body.length)}` : '';
+    const t0 = performance.now();
+    return real.apply(this, arguments).then(
+      (res) => {
+        const length = res.headers.get('content-length');
+        log('net', `${method} ${path} → ${res.status} in ${Math.round(performance.now() - t0)} ms${sent}${length ? `, got ${kb(Number(length))}` : ''}`);
+        return res;
+      },
+      (err) => {
+        log('net', `${method} ${path} failed after ${Math.round(performance.now() - t0)} ms: ${err.message}`);
+        throw err;
+      },
+    );
+  };
+}
+
 export function entriesForDisplay() {
   return [...load()];
 }
@@ -131,6 +204,8 @@ export function start() {
   addEventListener('visibilitychange', beat);
   const nav = navigator.deviceMemory ? `, device memory ~${navigator.deviceMemory} GB` : '';
   log('page', `open ${location.pathname}${location.hash}`, `${navigator.userAgent}${nav}`);
+  log('storage', storageSummary());
+  watchFetch();
 
   addEventListener('pagehide', () => {
     log('page', `closed ${location.pathname}`);

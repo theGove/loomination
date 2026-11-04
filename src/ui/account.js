@@ -3,6 +3,7 @@
 // to any computer. Signed in, it shows their picture, sync status and a menu.
 
 import * as sync from './sync.js';
+import { log } from './debug.js';
 
 const STATUS_TEXT = {
   'signed-out': 'Not signed in',
@@ -70,7 +71,10 @@ export function mountAccount(header) {
     try {
       await T.signIn();
       clearTimeout(retry);
-      if (sawRemote) location.reload();
+      if (sawRemote) {
+        log('sync', 'signed in; reloading to show the data from Drive');
+        location.reload();
+      }
       else render();
     } catch (err) {
       clearTimeout(retry);

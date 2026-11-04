@@ -46,6 +46,7 @@ const views = {
 debug.start();
 sync.migrateLegacy();
 await sync.loaded(2000);
+debug.watchSync(sync.teatherApi());
 const header = document.querySelector('.site-header');
 if (header) {
   try {
@@ -54,10 +55,18 @@ if (header) {
     console.warn('Loomination: account control failed', err);
   }
 }
+debug.log('page', 'waiting for the first sync');
+const t0 = performance.now();
 await sync.ready(3000);
+debug.log('page', `first sync wait over after ${Math.round(performance.now() - t0)} ms`);
 
 for (const el of document.querySelectorAll('[data-loomination]')) {
   const mount = views[el.dataset.loomination];
-  if (mount) debug.timed('page', `show ${el.dataset.loomination}`, () => mount(el));
-  else console.warn(`Loomination: unknown view "${el.dataset.loomination}"`);
+  if (mount) {
+    debug.before('page', `showing ${el.dataset.loomination}`);
+    debug.timed('page', `show ${el.dataset.loomination}`, () => mount(el));
+    debug.log('page', `${el.dataset.loomination} shown`);
+  } else {
+    console.warn(`Loomination: unknown view "${el.dataset.loomination}"`);
+  }
 }
