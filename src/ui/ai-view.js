@@ -9,7 +9,7 @@ import { repeatUnit } from '../core/loom.js';
 import { cloneDraft } from '../core/draft.js';
 import { yarnsByFiber, yarnById } from '../core/yarns.js';
 import { createLibrary } from './library-data.js';
-import { loadLoom } from './loom-profile.js';
+import { listLooms, loadLoom, chooseLoom, loomOptions } from './loom-profile.js';
 import { setImport } from './saved-drafts.js';
 import { paintThumbnail } from './draft-view.js';
 import { escapeHtml } from './html.js';
@@ -46,7 +46,8 @@ export function addToStash(entry) {
 
 export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl, coneUrl }) {
   const state = load();
-  const loom = loadLoom();
+  const looms = listLooms();
+  let loom = loadLoom(looms);
   const lib = createLibrary(libraryBase);
   let candidates = [];
   let books = new Map();
@@ -55,7 +56,8 @@ export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl
   root.innerHTML = `
     <section class="ldm-step">
       <h2><span>1</span> Your loom</h2>
-      <p>${escapeHtml(loomSummary(loom))} ${loomUrl ? `<a href="${loomUrl}">Change on the Loom setup page</a>` : ''}</p>
+      ${looms.length > 1 ? `<label class="ldm-field ldm-loom-pick">Which loom? <select name="loom">${loomOptions(looms, loom.id)}</select></label>` : ''}
+      <p><span class="ldm-loom-summary">${escapeHtml(loomSummary(loom))}</span> ${loomUrl ? `<a href="${loomUrl}">Change on the Loom setup page</a>` : ''}</p>
     </section>
     <section class="ldm-step">
       <h2><span>2</span> What do you want to make?</h2>
@@ -175,13 +177,22 @@ export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl
 
   // --- Prompt --------------------------------------------------------------
 
-  const ready = Promise.all([lib.drafts(loom.shafts), lib.books()])
+  // Library drafts that fit the chosen loom's shafts.
+  const loadCandidates = () => Promise.all([lib.drafts(loom.shafts), lib.books()])
     .then(([rows, bookMap]) => {
       books = bookMap;
       candidates = rows;
     })
     .catch(() => { candidates = []; }) // the prompt still works without library drafts
     .then(refreshPrompt);
+  let ready = loadCandidates();
+
+  $('[name=loom]')?.addEventListener('change', (e) => {
+    chooseLoom(e.target.value);
+    loom = loadLoom(looms);
+    $('.ldm-loom-summary').textContent = loomSummary(loom);
+    ready = loadCandidates();
+  });
 
   function currentPrompt() {
     const picked = state.maxDrafts ? selectCandidates(candidates, loom, { limit: state.maxDrafts }) : [];

@@ -205,6 +205,9 @@
 @media (max-width: 760px) { .ldm-loom { grid-template-columns: minmax(0, 1fr); } }
 .ldm-loom-form { display: flex; flex-direction: column; gap: 0.75rem; }
 .ldm-loom h2 { font-size: 1.25rem; margin: 0; }
+.ldm-loom-actions { display: flex; gap: 0.5rem; }
+.ldm-loom-actions [hidden] { display: none; }
+.ldm-loom-pick { max-width: 20rem; }
 .ldm-instructions section { margin: 1.5rem 0; }
 .ldm-instructions h3 { font-size: 1.05rem; margin: 0 0 0.4rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--ldm-line); }
 .ldm-instructions h4 { font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }

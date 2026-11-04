@@ -1,5 +1,5 @@
-// "Set up my loom": the weaver's loom profile (kept in this browser) and
-// printable instructions for weaving one draft on that loom.
+// "Set up my loom": the weaver's looms (they can own several and pick one) and
+// printable instructions for weaving one draft on the chosen loom.
 //
 // The draft comes from the library (loom.html#library=hw-12871) or, by
 // default, the draft currently open in the designer.
@@ -7,17 +7,24 @@
 import { planForLoom, runs, sleyFor } from '../core/loom.js';
 import { loadPageDraft } from './page-draft.js';
 import { escapeHtml } from './html.js';
-import { loadLoom, saveLoom } from './loom-profile.js';
+import { listLooms, loadLoom, saveLoom, chooseLoom, deleteLoom, unusedName, loomOptions, DEFAULT_LOOM } from './loom-profile.js';
 
 export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
-  let loom = loadLoom();
+  let looms = listLooms();
+  let loom = loadLoom(looms);
   let draft = null;
   let source = '';
 
   root.classList.add('ldm', 'ldm-loom');
   root.innerHTML = `
     <form class="ldm-loom-form" aria-label="Your loom">
-      <h2>Your loom</h2>
+      <h2>Your looms</h2>
+      <label class="ldm-field">Weave on <select name="chosen"></select></label>
+      <div class="ldm-loom-actions">
+        <button type="button" data-act="add">Add a loom</button>
+        <button type="button" data-act="delete">Delete</button>
+      </div>
+      <label class="ldm-field">Name <input type="text" name="name" maxlength="60" autocomplete="off"></label>
       <label class="ldm-field">Kind of loom <select name="type">
         <option value="floor">Floor loom (treadles)</option>
         <option value="table">Table loom (levers)</option>
@@ -32,7 +39,7 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
       <label class="ldm-field">Weaving width, inches <input type="number" name="widthIn" min="0" max="200" step="0.5" placeholder="optional"></label>
       <label class="ldm-field">Reeds you own (dents per inch) <input type="text" name="reeds" inputmode="decimal" placeholder="8, 10, 12"></label>
       <label class="ldm-field">Sett, ends per inch <input type="number" name="epi" min="0" max="200" step="0.5" placeholder="optional"></label>
-      <p class="ldm-hint">Saved in this browser for next time.</p>
+      <p class="ldm-hint">Saved for next time, and on your Google Drive when you sign in.</p>
     </form>
     <article class="ldm-instructions" aria-live="polite"><p class="ldm-status">Loading…</p></article>`;
 
@@ -40,6 +47,10 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
   const out = root.querySelector('.ldm-instructions');
 
   const fill = () => {
+    // Before anything is saved, the picker shows the default loom being edited.
+    form.chosen.innerHTML = loomOptions(loom.id ? looms : [loom], loom.id);
+    form.querySelector('[data-act=delete]').hidden = !loom.id;
+    form.name.value = loom.name;
     form.type.value = loom.type;
     form.shafts.value = loom.shafts;
     form.treadles.value = loom.treadles;
@@ -51,8 +62,11 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
   };
   fill();
 
-  form.addEventListener('input', () => {
+  form.addEventListener('input', (e) => {
+    if (e.target.name === 'chosen') return;
     loom = {
+      id: loom.id,
+      name: form.name.value.trim() || loom.name,
       type: form.type.value,
       shafts: clampInt(form.shafts.value, 2, 40, loom.shafts),
       treadles: clampInt(form.treadles.value, 2, 40, loom.treadles),
@@ -62,7 +76,41 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
       widthIn: Math.max(0, Number(form.widthIn.value) || 0),
     };
     root.querySelectorAll('[data-floor]').forEach((el) => { el.hidden = loom.type !== 'floor'; });
-    saveLoom(loom);
+    const isNew = !loom.id;
+    loom = saveLoom(loom);
+    if (isNew) chooseLoom(loom.id);
+    looms = [...looms.filter((l) => l.id !== loom.id), loom];
+    if (isNew) {
+      form.chosen.innerHTML = loomOptions(looms, loom.id);
+      form.querySelector('[data-act=delete]').hidden = false;
+    } else if (e.target.name === 'name') {
+      form.chosen.selectedOptions[0].textContent = loom.name;
+    }
+    render();
+  });
+  form.chosen.addEventListener('change', () => {
+    chooseLoom(form.chosen.value);
+    loom = loadLoom(looms);
+    fill();
+    render();
+  });
+  form.querySelector('[data-act=add]').addEventListener('click', () => {
+    if (!loom.id) loom = saveLoom(loom); // keep the loom they were editing
+    loom = saveLoom({ ...DEFAULT_LOOM, name: unusedName(looms.length ? looms : [loom]) });
+    chooseLoom(loom.id);
+    looms = listLooms();
+    fill();
+    render();
+    form.name.focus();
+    form.name.select();
+  });
+  form.querySelector('[data-act=delete]').addEventListener('click', () => {
+    if (!window.confirm(`Delete "${loom.name}"? Your drafts are not affected.`)) return;
+    deleteLoom(loom.id);
+    looms = looms.filter((l) => l.id !== loom.id);
+    loom = looms[0] || { ...DEFAULT_LOOM, id: '' };
+    if (loom.id) chooseLoom(loom.id);
+    fill();
     render();
   });
   form.addEventListener('submit', (e) => e.preventDefault());
@@ -89,7 +137,7 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
       <header class="ldm-instr-head">
         <div>
           <h2>${escapeHtml(title)}</h2>
-          <p class="ldm-hint">Instructions for ${escapeHtml(source)} on your ${loomName(loom)}. ${editLink}${warpLink}</p>
+          <p class="ldm-hint">Instructions for ${escapeHtml(source)} on ${loomName(loom)}. ${editLink}${warpLink}</p>
         </div>
         <button type="button" data-print>Print</button>
       </header>
@@ -104,9 +152,11 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
 }
 
 function loomName(loom) {
-  if (loom.type === 'table') return `${loom.shafts}-shaft table loom`;
   const shed = { jack: 'jack', counterbalance: 'counterbalance', countermarch: 'countermarch' }[loom.shed];
-  return `${loom.shafts}-shaft, ${loom.treadles}-treadle ${shed} loom`;
+  const kind = loom.type === 'table'
+    ? `${loom.shafts}-shaft table loom`
+    : `${loom.shafts}-shaft, ${loom.treadles}-treadle ${shed} loom`;
+  return `${escapeHtml(loom.name)} (your ${kind})`;
 }
 
 // --- Sections --------------------------------------------------------------

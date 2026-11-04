@@ -6,7 +6,7 @@ import { repeatUnit, sleyFor } from '../core/loom.js';
 import { planWarp, structureOf, DEFAULT_PROJECT } from '../core/warp-calc.js';
 import { yarnsByFiber, yarnById } from '../core/yarns.js';
 import { loadPageDraft } from './page-draft.js';
-import { loadLoom } from './loom-profile.js';
+import { listLooms, loadLoom, chooseLoom, loomOptions } from './loom-profile.js';
 import { escapeHtml } from './html.js';
 import * as sync from './sync.js';
 
@@ -36,7 +36,8 @@ function saveInputs(inputs) {
 export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
   let inputs = loadInputs();
   let page = null;
-  const loom = loadLoom();
+  const looms = listLooms();
+  let loom = loadLoom(looms);
 
   const yarnOptions = (extra = '') => `${extra}${yarnsByFiber().map((g) => `<optgroup label="${escapeHtml(g.fiber)}">${g.yarns.map((y) => `<option value="${y.id}">${escapeHtml(y.name)}</option>`).join('')}</optgroup>`).join('')}<option value="custom">Other (enter yards per pound)</option>`;
   const num = (name, label, attrs = '') => `<label class="ldm-field">${label} <input type="number" name="${name}" ${attrs}></label>`;
@@ -45,6 +46,7 @@ export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
   root.innerHTML = `
     <form class="ldm-loom-form" aria-label="Project">
       <h2>Project</h2>
+      ${looms.length > 1 ? `<label class="ldm-field">Loom <select name="loom">${loomOptions(looms, loom.id)}</select></label>` : ''}
       <div class="ldm-sizes">
         ${num('finishedWidth', 'Finished width, in', 'min="1" max="200" step="0.5"')}
         ${num('finishedLength', 'Finished length, in', 'min="1" max="2000" step="0.5"')}
@@ -104,6 +106,11 @@ export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
     else inputs[el.name] = Math.max(0, Number(el.value) || 0);
     showCustom();
     saveInputs(inputs);
+    render();
+  });
+  form.loom?.addEventListener('change', () => {
+    chooseLoom(form.loom.value);
+    loom = loadLoom(looms);
     render();
   });
   form.addEventListener('submit', (e) => e.preventDefault());
@@ -175,7 +182,7 @@ export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
         <div><dt>Warp yarn</dt><dd>${yards(plan.warp.yards)}</dd></div>
         <div><dt>Weft yarn</dt><dd>${yards(plan.weft.yards)}</dd></div>
       </dl>
-      ${tooWide ? `<p class="ldm-problems">The warp is ${inches(plan.widthInReed)} wide in the reed, wider than your loom's ${loom.widthIn}-inch weaving width.</p>` : ''}
+      ${tooWide ? `<p class="ldm-problems">The warp is ${inches(plan.widthInReed)} wide in the reed, wider than the ${loom.widthIn}-inch weaving width of ${escapeHtml(loom.name)}.</p>` : ''}
       <section>
         <h3>Sett and width</h3>
         <p>${settNote}</p>

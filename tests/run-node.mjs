@@ -9,6 +9,7 @@ import './loom.test.js';
 import './warp.test.js';
 import './ai.test.js';
 import './cone.test.js';
+import './looms.test.js';
 
 const { total, failed, skipped } = await run(({ name, ok, error, skipped }) => {
   console.log(`${skipped ? 'skip' : ok ? 'ok  ' : 'FAIL'} ${name}${skipped ? ` (${skipped})` : ''}`);
