@@ -183,7 +183,13 @@ export function checkForCrashes() {
     const closed = entries.some((e) => e.s === s && e.area === 'page' && e.msg.startsWith('closed'));
     if (opened && !closed) {
       const last = [...entries].reverse().find((e) => e.s === s);
-      log('page', `previous visit (${opened.msg.slice(5)}) did not end normally: the tab may have crashed or run out of memory. Its last note: ${last.area}: ${last.msg}`, { session: s });
+      // The heartbeat runs on a timer, so if it kept beating after the last
+      // note the page was still running (not stuck) while it failed.
+      const after = beat?.t ? Math.round((beat.t - last.t) / 1000) : null;
+      const vitals = beat?.t
+        ? ` Its heartbeat went on ${after} s after that note${beat.mb !== undefined ? `, last at ${beat.mb} MB` : ''}, ${beat.nodes} page elements.`
+        : '';
+      log('page', `previous visit (${opened.msg.slice(5)}) did not end normally: the tab may have crashed or run out of memory. Its last note: ${last.area}: ${last.msg}.${vitals}`, { session: s, beat });
     }
   }
   writeAlive(alive);
@@ -196,7 +202,7 @@ export function start() {
   checkForCrashes();
   const beat = () => {
     const map = readAlive();
-    map[session] = { t: Date.now(), hidden: document.visibilityState === 'hidden' };
+    map[session] = { t: Date.now(), hidden: document.visibilityState === 'hidden', mb: heapMb(), nodes: document.getElementsByTagName('*').length };
     writeAlive(map);
   };
   beat();
