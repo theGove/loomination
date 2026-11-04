@@ -206,7 +206,7 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl 
     const canvas = wrap.querySelector('canvas');
     const readout = detail.querySelector('.ldm-readout');
     // Largest cell size (up to 16px) that fits the width; small screens scroll.
-    const room = wrap.clientWidth - 24;
+    const room = wrap.parentElement.clientWidth - 26; // wrap padding + border
     let cell = 16;
     while (cell > 4 && layoutDraft(draft, cell).width > room) cell--;
     let layout = paintDraft(canvas, draft, { cell });

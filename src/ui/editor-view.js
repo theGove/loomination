@@ -166,7 +166,7 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
   };
 
   function fitCell(draft) {
-    const room = wrap.clientWidth - 24;
+    const room = wrap.parentElement.clientWidth - 26; // wrap padding + border
     let cell = 16;
     while (cell > 6 && layoutDraft(draft, cell).width > room) cell--;
     return cell;
@@ -216,7 +216,7 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
   store.subscribe(repaint);
   store.subscribe((draft) => saved.saveCurrentSoon(draft));
   saved.saveCurrentSoon(store.get());
-  new ResizeObserver(() => repaint()).observe(wrap);
+  new ResizeObserver(() => repaint()).observe(wrap.parentElement);
   repaint();
 
   // --- Pointer editing -----------------------------------------------------

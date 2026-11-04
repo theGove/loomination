@@ -131,6 +131,9 @@
 .ldm-actions { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .ldm .ldm-primary { background: var(--ldm-accent); color: var(--ldm-accent-fg); border-color: var(--ldm-accent); }
 .ldm-canvas-wrap {
+  /* Shrink to the draft, grow to the available width, scroll only past that. */
+  width: fit-content;
+  max-width: 100%;
   overflow: auto;
   max-height: 80vh;
   padding: 12px;
