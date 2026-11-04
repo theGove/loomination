@@ -1,0 +1,185 @@
+[WIF]
+Version=1.1
+Date=April 20, 1997
+Developers=wif@mhsoft.com
+Source Program=Loomination
+Source Version=0.1
+
+[CONTENTS]
+TEXT=true
+WEAVING=true
+WARP=true
+WEFT=true
+COLOR PALETTE=true
+COLOR TABLE=true
+THREADING=true
+TIEUP=true
+TREADLING=true
+WARP COLORS=true
+WEFT COLORS=true
+NOTES=true
+PRIVATE LOOMINATION META=true
+
+[TEXT]
+Title=Page 192, Figure 2
+
+[WEAVING]
+Shafts=9
+Treadles=9
+Rising Shed=true
+
+[WARP]
+Threads=27
+Color=1
+
+[WEFT]
+Threads=27
+Color=1
+
+[COLOR PALETTE]
+Entries=2
+Form=RGB
+Range=0,255
+
+[COLOR TABLE]
+1=0,102,0
+2=255,255,255
+
+[THREADING]
+1=1
+2=2
+3=3
+4=4
+5=5
+6=6
+7=7
+8=8
+9=9
+10=1
+11=2
+12=3
+13=4
+14=5
+15=6
+16=7
+17=8
+18=9
+19=1
+20=2
+21=3
+22=4
+23=5
+24=6
+25=7
+26=8
+27=9
+
+[TIEUP]
+1=1,2,4,5,6
+2=1,2,3,5,6
+3=1,2,3,6,7
+4=1,2,3,7,8
+5=2,3,7,8,9
+6=3,4,7,8,9
+7=4,5,7,8,9
+8=4,5,6,8,9
+9=1,4,5,6,9
+
+[TREADLING]
+1=1
+2=2
+3=3
+4=4
+5=5
+6=6
+7=7
+8=8
+9=9
+10=1
+11=2
+12=3
+13=4
+14=5
+15=6
+16=7
+17=8
+18=9
+19=1
+20=2
+21=3
+22=4
+23=5
+24=6
+25=7
+26=8
+27=9
+
+[WARP COLORS]
+1=1
+2=2
+3=1
+4=2
+5=1
+6=2
+7=1
+8=2
+9=1
+10=2
+11=1
+12=2
+13=1
+14=2
+15=1
+16=2
+17=1
+18=2
+19=1
+20=2
+21=1
+22=2
+23=1
+24=2
+25=1
+26=2
+27=1
+
+[WEFT COLORS]
+1=1
+2=2
+3=1
+4=2
+5=1
+6=2
+7=1
+8=2
+9=1
+10=2
+11=1
+12=2
+13=1
+14=2
+15=1
+16=2
+17=1
+18=2
+19=1
+20=2
+21=1
+22=2
+23=1
+24=2
+25=1
+26=2
+27=1
+
+[NOTES]
+1=Drawdown digitized by Handweaving.net (draft #62112) from Textile Design and Colour, William Watson, published 1912. Draft re-derived from the drawdown by Loomination.
+
+[PRIVATE LOOMINATION META]
+Mode=treadle
+End Numbering=rtl
+Tieup Corner=tr
+Source=Textile Design and Colour, William Watson
+Source Year=1912
+License=public-domain
+Transcribed By=Handweaving.net draft #62112
