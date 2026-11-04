@@ -13,7 +13,10 @@ import { createStore } from './store.js';
 import { createLibrary } from './library-data.js';
 import { layoutDraft, paintDraft, hitTest } from './draft-view.js';
 import * as saved from './saved-drafts.js';
+import { teatherApi } from './sync.js';
 import { timed } from './debug.js';
+
+const isSignedIn = () => !!teatherApi()?.isSignedIn();
 
 export function starterDraft() {
   let d = createDraft({ shafts: 4, treadles: 4, numEnds: 32, numPicks: 32, palette: [[246, 241, 228], [38, 70, 120]] });
@@ -46,7 +49,7 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
         <button type="button" data-act="open">Open…</button>
         ${imageToWifUrl ? `<a class="ldm-button" href="${imageToWifUrl}" title="Turn a picture of a drawdown into a WIF file, then Open it here">From an image…</a>` : ''}
         <button type="button" data-act="mine">My drafts</button>
-        <button type="button" data-act="keep" title="Save to My drafts in this browser">Save</button>
+        <button type="button" data-act="keep" title="Save to My drafts: your Google Drive when you're signed in, otherwise this browser">Save</button>
         <button type="button" data-act="wif">Download .wif</button>
         <button type="button" data-act="json" title="Loomination's own format">.json</button>
         <button type="button" data-act="png">.png</button>
@@ -138,7 +141,7 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
     <dialog class="ldm-dialog">
       <form method="dialog">
         <h3>My drafts</h3>
-        <p class="ldm-hint">Saved in this browser only. Download a .wif to keep a copy elsewhere.</p>
+        <p class="ldm-hint" data-mine-note></p>
         <ul class="ldm-mine"></ul>
         <button value="close">Close</button>
       </form>
@@ -362,12 +365,21 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
     },
     open: () => fileInput.click(),
     mine: () => showMine(),
-    keep() {
+    async keep() {
       const draft = store.get();
+      const title = draft.meta.title || 'Untitled';
+      status(`Saving “${title}”…`);
       try {
-        ui.savedId = saved.saveDraft(draft, ui.savedId);
-        saved.setCurrentId(ui.savedId);
-        status(`Saved “${draft.meta.title || 'Untitled'}” to My drafts.`);
+        const { id, where } = await saved.saveDraft(draft, ui.savedId);
+        ui.savedId = id;
+        saved.setCurrentId(id);
+        status({
+          drive: `Saved “${title}” to My drafts in your Google Drive.`,
+          copy: `“${title}” was changed on another computer, so this version was saved as a copy. Both are in My drafts.`,
+          browser: isSignedIn()
+            ? `Saved “${title}” in this browser. Your Google Drive couldn't be reached; it will go there next time.`
+            : `Saved “${title}” to My drafts in this browser. Sign in to keep it in your Google Drive.`,
+        }[where]);
       } catch (err) {
         status(`Not saved: ${err.message} Download a .wif instead.`);
       }
@@ -549,8 +561,22 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
     store.apply(draft);
   }
 
-  function showMine() {
-    const list = saved.listDrafts();
+  // My drafts opens at once with this browser's copies, then checks Drive.
+  async function showMine() {
+    const note = $('[data-mine-note]');
+    renderMine(saved.localDrafts());
+    if (!dialog.open) dialog.showModal();
+    if (!isSignedIn()) {
+      note.textContent = 'Saved in this browser. Sign in with "Save to Google Drive" to keep them in your Drive as .wif files.';
+      return;
+    }
+    note.textContent = 'Checking your Google Drive…';
+    const list = await saved.listDrafts();
+    note.textContent = 'Each draft is a .wif file in the Loomination folder of your Google Drive.';
+    if (dialog.open) renderMine(list);
+  }
+
+  function renderMine(list) {
     const ul = $('.ldm-mine');
     ul.innerHTML = list.length ? '' : '<li class="ldm-hint">Nothing saved yet. Use Save to keep a draft here.</li>';
     for (const item of list) {
@@ -558,26 +584,26 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
       li.innerHTML = `<span><strong></strong><br><small></small></span>
         <button type="button" data-open>Open</button> <button type="button" data-remove>Delete</button>`;
       li.querySelector('strong').textContent = item.title || 'Untitled';
-      li.querySelector('small').textContent = `${item.draft.shafts} shafts · saved ${new Date(item.saved).toLocaleString()}`;
+      li.querySelector('small').textContent = `${item.draft.shafts} shafts · saved ${new Date(item.saved).toLocaleString()}${item.pending ? ' · not in Drive yet' : ''}`;
       li.querySelector('[data-open]').addEventListener('click', () => {
         loadDraft(normalizeDraft(item.draft), item.id);
         dialog.close();
         status(`Opened “${item.title || 'Untitled'}”. Undo brings back the previous draft.`);
       });
-      li.querySelector('[data-remove]').addEventListener('click', () => {
+      li.querySelector('[data-remove]').addEventListener('click', async () => {
         if (!confirm(`Delete “${item.title || 'Untitled'}” from My drafts?`)) return;
-        saved.deleteDraft(item.id);
+        await saved.deleteDraft(item.id);
         if (ui.savedId === item.id) ui.savedId = null;
-        showMine();
+        renderMine(saved.localDrafts());
       });
       ul.append(li);
     }
-    if (!dialog.open) dialog.showModal();
   }
-  // Keep an open "My drafts" list current when another computer or tab saves.
-  saved.onDraftsChange(() => {
-    if (dialog.open) showMine();
-  });
+
+  // Signed in: upload drafts saved while offline or signed out, and move any
+  // from older versions (kept in state.json) to their own files. Quietly, in
+  // the background.
+  if (isSignedIn()) saved.listDrafts();
 
   // Open a library draft named in the URL (designer.html#library=hw-12871), or
   // one handed over by another page (designer.html#import=1).
