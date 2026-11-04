@@ -67,9 +67,15 @@ function themeColors(el) {
   };
 }
 
+// Most pixels a canvas may hold (about 64 MB). The largest library drafts are
+// 1744 × 1744 threads, which at full resolution needed canvases of 0.8–1.8 GB and
+// crashed the tab; iOS Safari also draws nothing past ~16.7 million pixels.
+// Bigger drafts are drawn at a lower resolution and scaled up to the same size.
+const MAX_CANVAS_PIXELS = 16_000_000;
+
 // Size a canvas for a CSS-pixel width/height on a high-DPI screen.
 function sizeCanvas(canvas, width, height) {
-  const dpr = globalThis.devicePixelRatio || 1;
+  const dpr = Math.min(globalThis.devicePixelRatio || 1, Math.sqrt(MAX_CANVAS_PIXELS / Math.max(1, width * height)));
   canvas.width = Math.max(1, Math.round(width * dpr));
   canvas.height = Math.max(1, Math.round(height * dpr));
   canvas.style.width = `${width}px`;

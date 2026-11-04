@@ -374,7 +374,12 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
     wif: () => download(`${fileName()}.wif`, toWif(store.get()), 'text/plain'),
     json: () => download(`${fileName()}.json`, JSON.stringify({ ...store.get(), formatVersion: FORMAT_VERSION }, null, 1), 'application/json'),
     png() {
-      const img = renderDrawdown(store.get(), { cellSize: 8, gridLine: 1, gridColor: [160, 160, 160] });
+      // 8px cells plus a grid line, shrunk for very large drafts so the image
+      // stays under ~16 million pixels (a 1744-thread draft would be ~1 GB).
+      const draft = store.get();
+      const pitch = Math.max(1, Math.min(9, Math.floor(Math.sqrt(16_000_000 / Math.max(1, draft.numEnds * draft.numPicks)))));
+      const gridLine = pitch >= 4 ? 1 : 0;
+      const img = renderDrawdown(draft, { cellSize: pitch - gridLine, gridLine, gridColor: [160, 160, 160] });
       const c = document.createElement('canvas');
       c.width = img.width;
       c.height = img.height;
