@@ -1,0 +1,136 @@
+[WIF]
+Version=1.1
+Date=April 20, 1997
+Developers=wif@mhsoft.com
+Source Program=Loomination
+Source Version=0.1
+
+[CONTENTS]
+TEXT=true
+WEAVING=true
+WARP=true
+WEFT=true
+COLOR PALETTE=true
+COLOR TABLE=true
+THREADING=true
+TIEUP=true
+TREADLING=true
+WARP COLORS=true
+WEFT COLORS=true
+NOTES=true
+PRIVATE LOOMINATION META=true
+
+[TEXT]
+Title=Page 188, Figure 1
+
+[WEAVING]
+Shafts=4
+Treadles=4
+Rising Shed=true
+
+[WARP]
+Threads=16
+Color=2
+
+[WEFT]
+Threads=16
+Color=1
+
+[COLOR PALETTE]
+Entries=2
+Form=RGB
+Range=0,255
+
+[COLOR TABLE]
+1=255,255,255
+2=160,9,16
+
+[THREADING]
+1=1
+2=2
+3=3
+4=4
+5=1
+6=2
+7=3
+8=4
+9=1
+10=2
+11=3
+12=4
+13=1
+14=2
+15=3
+16=4
+
+[TIEUP]
+1=1
+2=2
+3=3
+4=4
+
+[TREADLING]
+1=1
+2=2
+3=3
+4=4
+5=1
+6=2
+7=3
+8=4
+9=1
+10=2
+11=3
+12=4
+13=1
+14=2
+15=3
+16=4
+
+[WARP COLORS]
+1=2
+2=2
+3=2
+4=2
+5=2
+6=2
+7=2
+8=2
+9=2
+10=2
+11=2
+12=2
+13=2
+14=2
+15=2
+16=2
+
+[WEFT COLORS]
+1=1
+2=1
+3=1
+4=1
+5=1
+6=1
+7=1
+8=1
+9=1
+10=1
+11=1
+12=1
+13=1
+14=1
+15=1
+16=1
+
+[NOTES]
+1=Drawdown digitized by Handweaving.net (draft #66381) from Design Texts., Fenwick Umpleby, published 1910. Draft re-derived from the drawdown by Loomination.
+
+[PRIVATE LOOMINATION META]
+Mode=treadle
+End Numbering=rtl
+Tieup Corner=tr
+Source=Design Texts., Fenwick Umpleby (The Lawler Publishing Company)
+Source Year=1910
+License=public-domain
+Transcribed By=Handweaving.net draft #66381
