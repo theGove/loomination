@@ -1,0 +1,140 @@
+[WIF]
+Version=1.1
+Date=April 20, 1997
+Developers=wif@mhsoft.com
+Source Program=Loomination
+Source Version=0.1
+
+[CONTENTS]
+TEXT=true
+WEAVING=true
+WARP=true
+WEFT=true
+COLOR PALETTE=true
+COLOR TABLE=true
+THREADING=true
+TIEUP=true
+TREADLING=true
+WARP COLORS=true
+WEFT COLORS=true
+NOTES=true
+PRIVATE LOOMINATION META=true
+
+[TEXT]
+Title=Figure 830
+
+[WEAVING]
+Shafts=8
+Treadles=8
+Rising Shed=true
+
+[WARP]
+Threads=16
+Color=1
+
+[WEFT]
+Threads=16
+Color=2
+
+[COLOR PALETTE]
+Entries=2
+Form=RGB
+Range=0,255
+
+[COLOR TABLE]
+1=159,8,15
+2=255,255,255
+
+[THREADING]
+1=1
+2=2
+3=3
+4=4
+5=5
+6=6
+7=7
+8=8
+9=1
+10=2
+11=3
+12=4
+13=5
+14=6
+15=7
+16=8
+
+[TIEUP]
+1=1,3,4,6
+2=1,2,4,5
+3=2,3,5,8
+4=2,3,6,7
+5=1,3,5,6,7
+6=1,5,6,8
+7=2,5,7,8
+8=3,4,7,8
+
+[TREADLING]
+1=1
+2=2
+3=3
+4=4
+5=5
+6=6
+7=7
+8=8
+9=1
+10=2
+11=3
+12=4
+13=5
+14=6
+15=7
+16=8
+
+[WARP COLORS]
+1=1
+2=1
+3=1
+4=1
+5=1
+6=1
+7=1
+8=1
+9=1
+10=1
+11=1
+12=1
+13=1
+14=1
+15=1
+16=1
+
+[WEFT COLORS]
+1=2
+2=2
+3=2
+4=2
+5=2
+6=2
+7=2
+8=2
+9=2
+10=2
+11=2
+12=2
+13=2
+14=2
+15=2
+16=2
+
+[NOTES]
+1=Drawdown digitized by Handweaving.net (draft #8997) from A Handbook of Weaves, G. H. Oelsner, published 1915. Draft re-derived from the drawdown by Loomination.
+
+[PRIVATE LOOMINATION META]
+Mode=treadle
+End Numbering=rtl
+Tieup Corner=tr
+Source=A Handbook of Weaves, G. H. Oelsner (The Macmillan Company)
+Source Year=1915
+License=public-domain
+Transcribed By=Handweaving.net draft #8997
