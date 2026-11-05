@@ -192,10 +192,7 @@
 .ldm-work .ldm-readout { display: block; margin: 0 0 0.35rem; min-height: 1.5em; }
 .ldm-editor .ldm-canvas-wrap { max-height: calc(100vh - 160px); }
 .ldm-editor canvas { touch-action: none; cursor: crosshair; }
-.ldm-dialog { color: var(--ldm-fg); background: var(--ldm-bg); border: 1px solid var(--ldm-line); border-radius: var(--ldm-radius); width: min(32rem, calc(100vw - 32px)); }
-.ldm-dialog::backdrop { background: rgb(0 0 0 / 0.4); }
-.ldm-dialog h3 { margin-top: 0; }
-.ldm-mine { list-style: none; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: 0.5rem; max-height: 60vh; overflow: auto; }
+.ldm-mine { list-style: none; padding: 0; margin: 1rem 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .ldm-mine li { display: flex; gap: 0.5rem; align-items: center; }
 .ldm-mine li span { flex: 1; min-width: 0; }
 .ldm-mine small { color: var(--ldm-muted); }
@@ -281,8 +278,23 @@
 .ldm-big { font-size: 1.6rem; margin: 0.5rem 0; }
 .ldm-cone .ldm-instructions > button { margin-top: 0.5rem; }
 
+/* Step 1: choose a draft */
+.ldm-start { max-width: 60rem; }
+.ldm-start h2 { margin: 0 0 0.25rem; }
+.ldm-continue { display: flex; gap: 1rem; align-items: center; padding: 1rem; margin: 1rem 0; border: 1px solid var(--ldm-line); border-radius: var(--ldm-radius); background: var(--ldm-surface); }
+.ldm-continue canvas { flex: none; border: 1px solid var(--ldm-line); }
+.ldm-continue h3 { margin: 0; overflow-wrap: anywhere; }
+.ldm-continue p { margin: 0.25rem 0 0.75rem; }
+.ldm-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+.ldm .ldm-choice { display: flex; flex-direction: column; gap: 0.25rem; text-align: left; padding: 1rem; font: inherit; color: var(--ldm-fg); background: var(--ldm-surface); border: 1px solid var(--ldm-line); border-radius: var(--ldm-radius); text-decoration: none; cursor: pointer; }
+.ldm .ldm-choice:hover { border-color: var(--ldm-muted); }
+.ldm .ldm-choice strong { color: var(--ldm-accent); font-size: 1.05rem; }
+.ldm .ldm-choice span { color: var(--ldm-muted); font-size: 0.9rem; }
+.ldm-mine-section { max-width: 36rem; }
+.ldm-next { margin: 1.5rem 0 0; }
+
 @media print {
-  .site-header, .site-footer, .ldm-loom-form, [data-print] { display: none !important; }
+  .site-header, .site-footer, .site-notice, .ldm-loom-form, .ldm-next, [data-print] { display: none !important; }
   .ldm-yarn input { border: 0; padding: 0; }
   .ldm-loom { display: block; }
   .ldm { --ldm-fg: #000; --ldm-muted: #444; --ldm-line: #999; --ldm-grid: #888; --ldm-ink: #000; --ldm-cell: #fff; }

@@ -13,12 +13,17 @@ import { mountLoomSetup } from './ui/loom-view.js';
 import { mountWarpPlanner } from './ui/warp-view.js';
 import { mountAiHelper } from './ui/ai-view.js';
 import { mountConeEstimator } from './ui/cone-view.js';
+import { mountStart } from './ui/start-view.js';
+import { mountSteps } from './ui/site-steps.js';
+import { adoptFromUrl } from './ui/page-draft.js';
 import * as sync from './ui/sync.js';
 import * as debug from './ui/debug.js';
 import { mountAccount } from './ui/account.js';
 
 const defaults = {
   libraryBase: new URL('../library/', import.meta.url).href,
+  startUrl: new URL('../', import.meta.url).href,
+  libraryUrl: new URL('../library.html', import.meta.url).href,
   designerUrl: new URL('../designer.html', import.meta.url).href,
   loomUrl: new URL('../loom.html', import.meta.url).href,
   warpUrl: new URL('../warp.html', import.meta.url).href,
@@ -31,6 +36,7 @@ const defaults = {
 const options = (el) => Object.fromEntries(Object.entries(defaults).map(([k, v]) => [k, el.dataset[k] || v]));
 
 const views = {
+  start: (el) => mountStart(el, options(el)),
   library: (el) => mountLibrary(el, options(el)),
   designer: (el) => mountEditor(el, options(el)),
   loom: (el) => mountLoomSetup(el, options(el)),
@@ -45,9 +51,19 @@ const views = {
 // are capped, so a slow teather.pages.dev delays the page by seconds at most.
 debug.start();
 sync.migrateLegacy();
+// An older link that names a draft (loom.html#library=hw-12871) makes it the
+// working draft before anything shows it.
+await adoptFromUrl(defaults.libraryBase);
+const header = document.querySelector('.site-header');
+if (header) {
+  try {
+    mountSteps(header, defaults);
+  } catch (err) {
+    console.warn('Loomination: steps failed', err);
+  }
+}
 await sync.loaded(2000);
 debug.watchSync(sync.teatherApi());
-const header = document.querySelector('.site-header');
 if (header) {
   try {
     mountAccount(header);

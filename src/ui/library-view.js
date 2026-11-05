@@ -9,11 +9,12 @@ import { parseWif } from '../core/wif.js';
 import { createLibrary, filterDrafts, filterFromParams, filterToParams, DEFAULT_FILTER } from './library-data.js';
 import { layoutDraft, paintDraft, paintThumbnail, hitTest } from './draft-view.js';
 import { escapeHtml } from './html.js';
+import { chooseDraft, setNotice } from './saved-drafts.js';
 import { log, timed } from './debug.js';
 
 const PAGE_SIZE = 60;
 
-export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl }) {
+export function mountLibrary(root, { libraryBase, designerUrl }) {
   const lib = createLibrary(libraryBase);
   const parsed = new Map(); // id -> Promise<{ draft, warnings }>
   const loadDraft = (id) => {
@@ -194,10 +195,8 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl 
         <button type="button" data-zoom="1" aria-label="Larger">+</button>
         <span class="ldm-readout" aria-live="off"></span>
         <span class="ldm-actions">
-          ${loomUrl ? `<a class="ldm-button" href="${escapeHtml(`${loomUrl}#library=${encodeURIComponent(id)}`)}">Set up my loom</a>` : ''}
-          ${warpUrl ? `<a class="ldm-button" href="${escapeHtml(`${warpUrl}#library=${encodeURIComponent(id)}`)}">Plan the warp</a>` : ''}
-          ${designerUrl ? `<a class="ldm-button" href="${escapeHtml(`${designerUrl}#library=${encodeURIComponent(id)}`)}">Open in designer</a>` : ''}
-          <a class="ldm-button ldm-primary" href="${lib.wifUrl(id)}" download="${escapeHtml(id)}.wif">Download .wif</a>
+          <a class="ldm-button" href="${lib.wifUrl(id)}" download="${escapeHtml(id)}.wif">Download .wif</a>
+          ${designerUrl ? '<button type="button" class="ldm-primary" data-use>Use this draft</button>' : ''}
         </span>
       </div>
       <div class="ldm-canvas-wrap"><canvas role="img" aria-label="Draft: threading, tie-up, treadling and drawdown"></canvas></div>
@@ -222,6 +221,15 @@ export function mountLibrary(root, { libraryBase, designerUrl, loomUrl, warpUrl 
       readout.textContent = describeHit(hitTest(draft, layout, e.clientX - rect.left, e.clientY - rect.top));
     });
     canvas.addEventListener('mouseleave', () => { readout.textContent = ''; });
+    detail.querySelector('[data-use]')?.addEventListener('click', async (e) => {
+      try {
+        const kept = await chooseDraft(draft);
+        setNotice(`Now working on “${meta.title || id}” from the library.${kept ? ` Your previous draft, “${kept}”, is in My drafts.` : ''}`);
+        location.href = designerUrl;
+      } catch (err) {
+        e.target.replaceWith(Object.assign(document.createElement('span'), { textContent: `Could not use this draft: ${err.message}` }));
+      }
+    });
   }
 }
 

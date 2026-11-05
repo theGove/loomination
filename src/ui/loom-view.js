@@ -1,8 +1,7 @@
 // "Set up my loom": the weaver's looms (they can own several and pick one) and
 // printable instructions for weaving one draft on the chosen loom.
 //
-// The draft comes from the library (loom.html#library=hw-12871) or, by
-// default, the draft currently open in the designer.
+// Step 3: the draft is the working draft chosen in step 1 (page-draft.js).
 
 import { planForLoom, runs, sleyFor } from '../core/loom.js';
 import { loadPageDraft } from './page-draft.js';
@@ -10,11 +9,10 @@ import { escapeHtml } from './html.js';
 import { log, timed } from './debug.js';
 import { listLooms, loadLoom, saveLoom, chooseLoom, deleteLoom, unusedName, loomOptions, DEFAULT_LOOM } from './loom-profile.js';
 
-export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
+export function mountLoomSetup(root, { startUrl, designerUrl, warpUrl }) {
   let looms = listLooms();
   let loom = loadLoom(looms);
-  let draft = null;
-  let source = '';
+  const draft = loadPageDraft();
 
   root.classList.add('ldm', 'ldm-loom');
   root.innerHTML = `
@@ -130,29 +128,19 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
   });
   form.addEventListener('submit', (e) => e.preventDefault());
 
-  let libraryId = null;
-  loadPageDraft(libraryBase)
-    .then((page) => {
-      ({ draft, source, libraryId } = page);
-      render();
-    })
-    .catch((err) => { out.innerHTML = `<p>Could not load the draft: ${escapeHtml(err.message)}</p>`; });
+  if (draft) render();
+  else out.innerHTML = `<p>No draft chosen yet. ${startUrl ? `<a class="ldm-button ldm-primary" href="${escapeHtml(startUrl)}">Choose a draft</a>` : ''}</p>`;
 
   function render() {
     if (!draft) return;
     const plan = timed('loom', `plan for ${loom.shafts}-shaft ${loom.type} loom, ${loom.treadles} treadles`, () => planForLoom(draft, loom));
     const title = draft.meta.title || 'Untitled draft';
-    const editLink = designerUrl
-      ? `<a href="${escapeHtml(libraryId ? `${designerUrl}#library=${encodeURIComponent(libraryId)}` : designerUrl)}">${libraryId ? 'Open in designer' : 'Edit in designer'}</a>`
-      : '';
-    const warpLink = warpUrl
-      ? ` · <a href="${escapeHtml(libraryId ? `${warpUrl}#library=${encodeURIComponent(libraryId)}` : warpUrl)}">Plan the warp</a>`
-      : '';
+    const editLink = designerUrl ? `<a href="${escapeHtml(designerUrl)}">Change the draft in the designer</a>` : '';
     out.innerHTML = `
       <header class="ldm-instr-head">
         <div>
           <h2>${escapeHtml(title)}</h2>
-          <p class="ldm-hint">Instructions for ${escapeHtml(source)} on ${loomName(loom)}. ${editLink}${warpLink}</p>
+          <p class="ldm-hint">How to weave it on ${loomName(loom)}. ${editLink}</p>
         </div>
         <button type="button" data-print>Print</button>
       </header>
@@ -161,7 +149,8 @@ export function mountLoomSetup(root, { libraryBase, designerUrl, warpUrl }) {
       ${threadingSection(draft, plan)}
       ${sleySection(draft, plan, loom)}
       ${plan.tieup ? tieupSection(plan, loom) : ''}
-      ${plan.picks ? picksSection(plan) : ''}`;
+      ${plan.picks ? picksSection(plan) : ''}
+      ${warpUrl ? `<p class="ldm-next"><a class="ldm-button ldm-primary" href="${escapeHtml(warpUrl)}">Next: Warp plan →</a></p>` : ''}`;
     out.querySelector('[data-print]').addEventListener('click', () => window.print());
   }
 }

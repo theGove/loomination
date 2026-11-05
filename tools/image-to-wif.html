@@ -30,9 +30,9 @@
   </style>
 </head>
 <body>
-  <p><a href="../designer.html">← Designer</a> · <a href="../">Library</a></p>
+  <p><a href="../">← Choose a draft</a></p>
   <h1>Image to WIF</h1>
-  <p style="color: var(--muted); margin-top: 0">Turn a clean picture of a drawdown into a draft, then open it in the designer or download it as a .wif.</p>
+  <p style="color: var(--muted); margin-top: 0">Turn a clean picture of a drawdown into a draft, then use it as your draft or download it as a .wif.</p>
   <div id="drop">Drop a drawdown image here, paste one (Ctrl+V), or <input type="file" id="file" accept="image/*"></div>
 
   <div class="controls">
@@ -43,7 +43,7 @@
     <label>Max treadles <input id="maxTreadles" type="number" value="24" min="2" max="100"></label>
     <label>Source <input id="source" type="text" size="28" placeholder="e.g. Atwater 1928, p. 42"></label>
     <button id="analyze" disabled>Analyze</button>
-    <button id="open" disabled>Open in designer</button>
+    <button id="open" disabled>Use this draft</button>
     <button id="download" disabled>Download .wif</button>
   </div>
 
@@ -58,7 +58,7 @@
     import { importFromImage, cellRect } from '../src/importImage/index.js';
     import { renderDrawdown } from '../src/core/render.js';
     import { toWif } from '../src/core/wif.js';
-    import { setImport } from '../src/ui/saved-drafts.js';
+    import { chooseDraft, setNotice } from '../src/ui/saved-drafts.js';
 
     const $ = (id) => document.getElementById(id);
     let image = null;
@@ -168,13 +168,18 @@
       return draft;
     }
 
-    // Hand the draft to the designer, which opens it as an undoable step.
-    function openInDesigner() {
-      if (!setImport(finishedDraft())) {
-        alert('This browser would not pass the draft to the designer (storage is blocked). Download the .wif and use Open… there instead.');
+    // Make it the working draft (the previous one is kept in My drafts if it
+    // had unsaved changes) and go on to the designer.
+    async function openInDesigner() {
+      const draft = finishedDraft();
+      try {
+        const kept = await chooseDraft(draft);
+        setNotice(`Now working on “${draft.meta.title || 'Untitled draft'}” from a picture.${kept ? ` Your previous draft, “${kept}”, is in My drafts.` : ''}`);
+      } catch (err) {
+        alert(`${err.message} Download the .wif and use Open a file on the start page instead.`);
         return;
       }
-      location.href = '../designer.html#import=1';
+      location.href = '../designer.html';
     }
 
     function download() {

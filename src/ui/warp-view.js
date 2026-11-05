@@ -33,9 +33,9 @@ function saveInputs(inputs) {
   sync.set(PLAN_KEY, inputs);
 }
 
-export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
+export function mountWarpPlanner(root, { startUrl, coneUrl }) {
   let inputs = loadInputs();
-  let page = null;
+  const draft = loadPageDraft();
   const looms = listLooms();
   let loom = loadLoom(looms);
 
@@ -122,16 +122,11 @@ export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
     updateStatus(e.target.closest('tr'), key);
   });
 
-  loadPageDraft(libraryBase)
-    .then((p) => {
-      page = p;
-      render();
-    })
-    .catch((err) => { out.innerHTML = `<p>Could not load the draft: ${escapeHtml(err.message)}</p>`; });
+  if (draft) render();
+  else out.innerHTML = `<p>No draft chosen yet. ${startUrl ? `<a class="ldm-button ldm-primary" href="${escapeHtml(startUrl)}">Choose a draft</a>` : ''}</p>`;
 
   function render() {
-    if (!page) return;
-    const { draft } = page;
+    if (!draft) return;
     const warpYarn = yarnById(inputs.warpYarn);
     const weftYarn = inputs.weftYarn === 'same' ? warpYarn : yarnById(inputs.weftYarn);
     const warpYpp = inputs.warpYarn === 'custom' ? inputs.warpYpp : warpYarn?.ypp ?? 0;
@@ -166,12 +161,11 @@ export function mountWarpPlanner(root, { libraryBase, loomUrl, coneUrl }) {
     if (plan.selvedges) endsParts.push(`${plan.selvedges} floating selvedges`);
 
     const title = draft.meta.title || 'Untitled draft';
-    const loomLink = loomUrl ? `<a href="${escapeHtml(page.libraryId ? `${loomUrl}#library=${encodeURIComponent(page.libraryId)}` : loomUrl)}">Loom setup</a>` : '';
     out.innerHTML = `
       <header class="ldm-instr-head">
         <div>
           <h2>${escapeHtml(title)}</h2>
-          <p class="ldm-hint">Warp plan for ${escapeHtml(page.source)}. ${loomLink}</p>
+          <p class="ldm-hint">Warp plan on ${escapeHtml(loom.name)}.</p>
         </div>
         <button type="button" data-print>Print</button>
       </header>

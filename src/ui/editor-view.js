@@ -1,16 +1,16 @@
-// The draft designer: the four-part draft on a canvas with click-and-drag
-// editing, a side panel for palette, sizes and settings, undo/redo, autosave,
-// "My drafts" in localStorage, and open/save as WIF or JSON.
+// The draft designer (step 2): the four-part working draft on a canvas with
+// click-and-drag editing, a side panel for palette, sizes and settings,
+// undo/redo, autosave, Save to My drafts, and download as WIF, JSON or PNG.
+// Drafts are chosen on the start page (start-view.js), not here.
 //
 // All changes go through the store as pure edits from core/edits.js; this file
 // only turns pointer and keyboard input into those edits.
 
-import { createDraft, normalizeDraft, FORMAT_VERSION } from '../core/draft.js';
+import { normalizeDraft, FORMAT_VERSION } from '../core/draft.js';
 import { parseWif, toWif } from '../core/wif.js';
 import { renderDrawdown } from '../core/render.js';
 import * as E from '../core/edits.js';
 import { createStore } from './store.js';
-import { createLibrary } from './library-data.js';
 import { layoutDraft, paintDraft, hitTest } from './draft-view.js';
 import * as saved from './saved-drafts.js';
 import { teatherApi } from './sync.js';
@@ -18,16 +18,14 @@ import { timed } from './debug.js';
 
 const isSignedIn = () => !!teatherApi()?.isSignedIn();
 
-export function starterDraft() {
-  let d = createDraft({ shafts: 4, treadles: 4, numEnds: 32, numPicks: 32, palette: [[246, 241, 228], [38, 70, 120]] });
-  d = E.straightDraw(d, { from: 0, to: 31 });
-  [[1, 2], [2, 3], [3, 4], [4, 1]].forEach((shafts, t) => shafts.forEach((s) => { d = E.setTieup(d, s, t + 1, true); }));
-  d = E.straightTreadling(d, { from: 0, to: 31 });
-  return E.setMeta(d, { title: '2/2 twill' });
-}
-
-export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl }) {
-  const store = createStore(saved.loadCurrent() ?? starterDraft());
+export function mountEditor(root, { startUrl, loomUrl }) {
+  const initial = saved.loadCurrent();
+  if (!initial) {
+    root.classList.add('ldm');
+    root.innerHTML = `<p>No draft chosen yet. ${startUrl ? `<a class="ldm-button ldm-primary" href="${startUrl}">Choose a draft</a>` : ''}</p>`;
+    return;
+  }
+  const store = createStore(initial);
   const ui = {
     tool: 'draw',      // 'draw' | 'select'
     color: 1,          // palette index used for painting color bars
@@ -45,16 +43,10 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
   root.innerHTML = `
     <div class="ldm-editbar" role="toolbar" aria-label="Designer">
       <div class="ldm-group">
-        <button type="button" data-act="new">New</button>
-        <button type="button" data-act="open">Open…</button>
-        ${imageToWifUrl ? `<a class="ldm-button" href="${imageToWifUrl}" title="Turn a picture of a drawdown into a WIF file, then Open it here">From an image…</a>` : ''}
-        <button type="button" data-act="mine">My drafts</button>
         <button type="button" data-act="keep" title="Save to My drafts: your Google Drive when you're signed in, otherwise this browser">Save</button>
         <button type="button" data-act="wif">Download .wif</button>
         <button type="button" data-act="json" title="Loomination's own format">.json</button>
         <button type="button" data-act="png">.png</button>
-        ${loomUrl ? `<a class="ldm-button" href="${loomUrl}" title="Threading, tie-up and treadling for your loom">Loom setup</a>` : ''}
-        ${warpUrl ? `<a class="ldm-button" href="${warpUrl}" title="Ends, warp length and yarn amounts">Warp plan</a>` : ''}
       </div>
       <div class="ldm-group">
         <button type="button" data-act="undo" title="Undo (Ctrl+Z)">Undo</button>
@@ -135,24 +127,14 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
       <div class="ldm-work">
         <p class="ldm-readout" aria-live="polite">&nbsp;</p>
         <div class="ldm-canvas-wrap"><canvas role="img" aria-label="Draft editor"></canvas></div>
+        ${loomUrl ? `<p class="ldm-next"><a class="ldm-button ldm-primary" href="${loomUrl}">Next: Loom setup →</a></p>` : ''}
       </div>
-    </div>
-    <input type="file" accept=".wif,.json,.txt" hidden>
-    <dialog class="ldm-dialog">
-      <form method="dialog">
-        <h3>My drafts</h3>
-        <p class="ldm-hint" data-mine-note></p>
-        <ul class="ldm-mine"></ul>
-        <button value="close">Close</button>
-      </form>
-    </dialog>`;
+    </div>`;
 
   const $ = (sel) => root.querySelector(sel);
   const canvas = $('canvas');
   const wrap = $('.ldm-canvas-wrap');
   const readout = $('.ldm-readout');
-  const fileInput = $('input[type=file]');
-  const dialog = $('dialog');
 
   // --- Rendering -----------------------------------------------------------
 
@@ -218,8 +200,10 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
   }
 
   store.subscribe(repaint);
-  store.subscribe((draft) => saved.saveCurrentSoon(draft));
-  saved.saveCurrentSoon(store.get());
+  store.subscribe((draft) => {
+    saved.saveCurrentSoon(draft);
+    saved.setDirty(true);
+  });
   new ResizeObserver(() => repaint()).observe(wrap.parentElement);
   repaint();
 
@@ -355,16 +339,6 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
   // --- Actions -------------------------------------------------------------
 
   const actions = {
-    new() {
-      const d = createDraft({ shafts: 4, treadles: 4, numEnds: 32, numPicks: 32, palette: store.get().palette });
-      store.apply(d);
-      ui.savedId = null;
-      saved.setCurrentId(null);
-      ui.selection = null;
-      status('New draft. Undo brings back the previous one.');
-    },
-    open: () => fileInput.click(),
-    mine: () => showMine(),
     async keep() {
       const draft = store.get();
       const title = draft.meta.title || 'Untitled';
@@ -373,6 +347,7 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
         const { id, where } = await saved.saveDraft(draft, ui.savedId);
         ui.savedId = id;
         saved.setCurrentId(id);
+        if (store.get() === draft) saved.setDirty(false);
         status({
           drive: `Saved “${title}” to My drafts in your Google Drive.`,
           copy: `“${title}” was changed on another computer, so this version was saved as a copy. Both are in My drafts.`,
@@ -522,7 +497,7 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
   // --- Keyboard ------------------------------------------------------------
 
   document.addEventListener('keydown', (e) => {
-    if (!root.isConnected || dialog.open) return;
+    if (!root.isConnected) return;
     if (e.target.closest?.('input, textarea, select')) return;
     const mod = e.ctrlKey || e.metaKey;
     const key = e.key.toLowerCase();
@@ -537,95 +512,10 @@ export function mountEditor(root, { libraryBase, loomUrl, warpUrl, imageToWifUrl
     if (handled) e.preventDefault();
   });
 
-  // --- Files and saved drafts ----------------------------------------------
-
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files[0];
-    fileInput.value = '';
-    if (!file) return;
-    try {
-      const { draft, warnings } = readDraftFile(await file.text(), file.name);
-      if (!draft.meta.title) draft.meta.title = file.name.replace(/\.[^.]+$/, '');
-      loadDraft(draft);
-      status(warnings.length ? `Opened ${file.name}. ${warnings.length} note(s): ${warnings[0]}` : `Opened ${file.name}.`);
-    } catch (err) {
-      status(`Could not open ${file.name}: ${err.message}`);
-    }
-  });
-
-  function loadDraft(draft, savedId = null) {
-    ui.selection = null;
-    ui.cell = 0;
-    ui.savedId = savedId;
-    saved.setCurrentId(savedId);
-    store.apply(draft);
-  }
-
-  // My drafts opens at once with this browser's copies, then checks Drive.
-  async function showMine() {
-    const note = $('[data-mine-note]');
-    renderMine(saved.localDrafts());
-    if (!dialog.open) dialog.showModal();
-    if (!isSignedIn()) {
-      note.textContent = 'Saved in this browser. Sign in with "Save to Google Drive" to keep them in your Drive as .wif files.';
-      return;
-    }
-    note.textContent = 'Checking your Google Drive…';
-    const list = await saved.listDrafts();
-    note.textContent = 'Each draft is a .wif file in the Loomination folder of your Google Drive.';
-    if (dialog.open) renderMine(list);
-  }
-
-  function renderMine(list) {
-    const ul = $('.ldm-mine');
-    ul.innerHTML = list.length ? '' : '<li class="ldm-hint">Nothing saved yet. Use Save to keep a draft here.</li>';
-    for (const item of list) {
-      const li = document.createElement('li');
-      li.innerHTML = `<span><strong></strong><br><small></small></span>
-        <button type="button" data-open>Open</button> <button type="button" data-remove>Delete</button>`;
-      li.querySelector('strong').textContent = item.title || 'Untitled';
-      li.querySelector('small').textContent = `${item.draft.shafts} shafts · saved ${new Date(item.saved).toLocaleString()}${item.pending ? ' · not in Drive yet' : ''}`;
-      li.querySelector('[data-open]').addEventListener('click', () => {
-        loadDraft(normalizeDraft(item.draft), item.id);
-        dialog.close();
-        status(`Opened “${item.title || 'Untitled'}”. Undo brings back the previous draft.`);
-      });
-      li.querySelector('[data-remove]').addEventListener('click', async () => {
-        if (!confirm(`Delete “${item.title || 'Untitled'}” from My drafts?`)) return;
-        await saved.deleteDraft(item.id);
-        if (ui.savedId === item.id) ui.savedId = null;
-        renderMine(saved.localDrafts());
-      });
-      ul.append(li);
-    }
-  }
-
   // Signed in: upload drafts saved while offline or signed out, and move any
   // from older versions (kept in state.json) to their own files. Quietly, in
   // the background.
   if (isSignedIn()) saved.listDrafts();
-
-  // Open a library draft named in the URL (designer.html#library=hw-12871), or
-  // one handed over by another page (designer.html#import=1).
-  const params = new URLSearchParams(location.hash.slice(1));
-  if (params.has('import')) {
-    history.replaceState(null, '', location.pathname + location.search);
-    const draft = saved.takeImport();
-    if (draft) {
-      loadDraft(draft);
-      status(`Opened “${draft.meta.title || 'Untitled'}”. Undo brings back your previous draft.`);
-    }
-  }
-  const libraryId = params.get('library');
-  if (libraryId) {
-    history.replaceState(null, '', location.pathname + location.search);
-    createLibrary(libraryBase).wifText(libraryId)
-      .then((text) => {
-        loadDraft(parseWif(text).draft);
-        status(`Opened ${store.get().meta.title || libraryId} from the library. Undo brings back your previous draft.`);
-      })
-      .catch((err) => status(`Could not open library draft ${libraryId}: ${err.message}`));
-  }
 
   function fileName() {
     return (store.get().meta.title || 'draft').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'draft';

@@ -2,6 +2,7 @@ import { test, assert, assertEqual, Skip } from './harness.js';
 import { createDraft } from '../src/core/draft.js';
 import { toWif } from '../src/core/wif.js';
 import { createMyDrafts, fileNameFor, idFromFileName } from '../src/ui/my-drafts.js';
+import * as saved from '../src/ui/saved-drafts.js';
 import * as sync from '../src/ui/sync.js';
 
 // Uses a stand-in for localStorage, so it runs under Node only (in a browser it
@@ -157,4 +158,43 @@ test('drafts: old state.json drafts move to files, and leave state.json only onc
   assertEqual([...T.folder.keys()], ['draft-Old-one-dold1.wif']);
   assertEqual(sync.get('draft:dold1'), undefined, 'removed from state.json');
   assertEqual((await my.list()).length, 1, 'not adopted twice');
+});
+
+// --- The working draft -------------------------------------------------------
+
+test('working draft: none until one is chosen', async () => {
+  freshStorage();
+  assertEqual(saved.loadCurrent(), null);
+  assertEqual(await saved.chooseDraft(titled('First')), null, 'nothing to keep');
+  assertEqual(saved.loadCurrent().meta.title, 'First');
+});
+
+test('working draft: choosing another keeps unsaved changes in My drafts', async () => {
+  freshStorage();
+  await saved.chooseDraft(titled('Edited'));
+  saved.saveCurrentSoon(titled('Edited', 6));
+  saved.setDirty(true);
+  assertEqual(await saved.chooseDraft(titled('Next')), 'Edited');
+  assertEqual(saved.loadCurrent().meta.title, 'Next');
+  assert(!saved.isDirty(), 'the new draft starts clean');
+  const kept = saved.localDrafts();
+  assertEqual(kept.map((d) => [d.title, d.draft.shafts]), [['Edited', 6]], 'the latest edit was kept, not the autosave before it');
+});
+
+test('working draft: a draft without changes is not saved again', async () => {
+  freshStorage();
+  await saved.chooseDraft(titled('Untouched'));
+  assertEqual(await saved.chooseDraft(titled('Other')), null);
+  assertEqual(saved.localDrafts().length, 0);
+});
+
+test('working draft: changes to a My drafts entry update that entry', async () => {
+  freshStorage();
+  const { id } = await saved.saveDraft(titled('Mine'));
+  await saved.chooseDraft(titled('Mine'), id);
+  saved.saveCurrentSoon(titled('Mine', 8));
+  saved.setDirty(true);
+  await saved.chooseDraft(titled('Library one'));
+  assertEqual(saved.localDrafts().map((d) => [d.id, d.draft.shafts]), [[id, 8]]);
+  assertEqual(saved.loadCurrentId(), null, 'the new draft is not a My drafts entry');
 });

@@ -10,7 +10,7 @@ import { cloneDraft } from '../core/draft.js';
 import { yarnsByFiber, yarnById } from '../core/yarns.js';
 import { createLibrary } from './library-data.js';
 import { listLooms, loadLoom, chooseLoom, loomOptions } from './loom-profile.js';
-import { setImport } from './saved-drafts.js';
+import { chooseDraft, setNotice } from './saved-drafts.js';
 import { paintThumbnail } from './draft-view.js';
 import { escapeHtml } from './html.js';
 import * as sync from './sync.js';
@@ -44,7 +44,7 @@ export function addToStash(entry) {
   return state.stash.length;
 }
 
-export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl, coneUrl }) {
+export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, coneUrl }) {
   const state = load();
   const looms = listLooms();
   let loom = loadLoom(looms);
@@ -291,17 +291,20 @@ export function mountAiHelper(root, { libraryBase, designerUrl, loomUrl, warpUrl
         <p>Warp ${yarn(rec.warpYarn)} · Weft ${yarn(rec.weftYarn)} · ${rec.epi ?? '?'} ends and ${rec.ppi ?? rec.epi ?? '?'} picks per inch</p>
         <ul class="ldm-checks">${checks.map((c) => `<li class="ldm-${c.level}"><span aria-hidden="true">${icon[c.level]}</span> ${escapeHtml(c.text)}</li>`).join('')}</ul>
         <div class="ldm-row">
-          ${draft && designerUrl ? '<button type="button" data-open>Open in designer</button>' : ''}
-          ${rec.draftId && draft && loomUrl ? `<a class="ldm-button" href="${loomUrl}#library=${encodeURIComponent(rec.draftId)}">Loom setup</a>` : ''}
-          ${rec.draftId && draft && warpUrl ? `<a class="ldm-button" href="${warpUrl}#library=${encodeURIComponent(rec.draftId)}">Plan the warp</a>` : ''}
+          ${draft && designerUrl ? '<button type="button" class="ldm-primary" data-use>Use this draft</button>' : ''}
         </div>
       </div>`;
     if (draft) paintThumbnail(card.querySelector('canvas'), draft, 140);
-    card.querySelector('[data-open]')?.addEventListener('click', () => {
+    card.querySelector('[data-use]')?.addEventListener('click', async (e) => {
       const d = cloneDraft(draft);
       if (!d.meta.title) d.meta.title = rec.title;
-      setImport(d);
-      location.href = `${designerUrl}#import=1`;
+      try {
+        const kept = await chooseDraft(d);
+        setNotice(`Now working on “${d.meta.title}”, suggested by your AI.${kept ? ` Your previous draft, “${kept}”, is in My drafts.` : ''}`);
+        location.href = designerUrl;
+      } catch (err) {
+        e.target.replaceWith(Object.assign(document.createElement('span'), { textContent: `Could not use this draft: ${err.message}` }));
+      }
     });
   }
 }

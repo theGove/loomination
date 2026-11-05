@@ -6,10 +6,28 @@ body { margin: 0; background: #fbf9f5; }
 .site-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1.5rem; padding-block: 1rem; border-bottom: 1px solid var(--ldm-line); margin-bottom: 1rem; }
 .site-header h1 { margin: 0; font-size: 1.4rem; letter-spacing: 0.02em; }
 .site-header h1 a { color: inherit; text-decoration: none; }
-.site-header nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.95rem; }
-.site-header nav a[aria-current] { font-weight: 600; }
-.site-header nav span { color: var(--ldm-muted); }
-.site-header nav small { font-size: 0.75rem; }
+.site-header { align-items: center; }
+/* The four steps: 1 Choose a draft, 2 Design, 3 Loom setup, 4 Warp plan (src/ui/site-steps.js). */
+.site-steps { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; font-size: 0.95rem; }
+.site-steps a { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ldm-accent); text-decoration: none; }
+.site-steps a:hover { text-decoration: underline; }
+.site-steps a span { display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 50%; border: 1px solid currentColor; font-size: 0.75rem; }
+.site-steps a[aria-current] { color: var(--ldm-fg); font-weight: 600; }
+.site-steps a[aria-current] span { background: var(--ldm-accent); border-color: var(--ldm-accent); color: var(--ldm-accent-fg); }
+.site-steps a[aria-disabled="true"] { color: var(--ldm-muted); opacity: 0.6; cursor: not-allowed; text-decoration: none; }
+/* The working draft, always in view. */
+.site-draft { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; max-width: 16rem; padding: 0.25rem 0.6rem 0.25rem 0.25rem; border: 1px solid var(--ldm-line); border-radius: var(--ldm-radius); background: var(--ldm-surface); color: var(--ldm-fg); text-decoration: none; font-size: 0.85rem; }
+.site-draft:hover { border-color: var(--ldm-muted); }
+.site-draft[hidden] { display: none; }
+.site-draft canvas { flex: none; display: block; max-width: 40px; max-height: 40px; border: 1px solid var(--ldm-line); }
+.site-draft span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.site-draft + .ldm-account { margin-left: 0; }
+.site-notice { margin: -0.5rem 16px 1rem; padding: 0.5rem 0.75rem; border-left: 4px solid var(--ldm-accent); background: var(--ldm-surface); color: var(--ldm-fg); font-size: 0.9rem; }
+@media (max-width: 600px) {
+  .site-steps { gap: 0.25rem 0.75rem; font-size: 0.9rem; }
+  .site-draft span { display: none; }
+  .site-draft { padding: 0.25rem; }
+}
 .site-footer { color: var(--ldm-muted); font-size: 0.8rem; padding-block: 2rem; }
 @media print { body { background: #fff; } }
 
