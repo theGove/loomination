@@ -1,0 +1,226 @@
+[WIF]
+Version=1.1
+Date=April 20, 1997
+Developers=wif@mhsoft.com
+Source Program=Loomination
+Source Version=0.1
+
+[CONTENTS]
+TEXT=true
+WEAVING=true
+WARP=true
+WEFT=true
+COLOR PALETTE=true
+COLOR TABLE=true
+THREADING=true
+TIEUP=true
+TREADLING=true
+WARP COLORS=true
+WEFT COLORS=true
+NOTES=true
+PRIVATE LOOMINATION META=true
+
+[TEXT]
+Title=Figure 760
+
+[WEAVING]
+Shafts=12
+Treadles=12
+Rising Shed=true
+
+[WARP]
+Threads=36
+Color=2
+
+[WEFT]
+Threads=36
+Color=3
+
+[COLOR PALETTE]
+Entries=4
+Form=RGB
+Range=0,255
+
+[COLOR TABLE]
+1=159,8,15
+2=255,255,255
+3=30,0,152
+4=255,255,0
+
+[THREADING]
+1=1
+2=2
+3=3
+4=4
+5=5
+6=6
+7=7
+8=8
+9=9
+10=10
+11=11
+12=12
+13=1
+14=2
+15=3
+16=4
+17=5
+18=6
+19=7
+20=8
+21=9
+22=10
+23=11
+24=12
+25=1
+26=2
+27=3
+28=4
+29=5
+30=6
+31=7
+32=8
+33=9
+34=10
+35=11
+36=12
+
+[TIEUP]
+1=7,8,9,10,11,12
+2=1,2,3,4,5,7
+3=5,7,9,10,11,12
+4=1,2,3,5,7,9
+5=3,5,7,9,11,12
+6=1,3,5,7,9,11
+7=2,4,6,8,10,12
+8=1,2,4,6,8,10
+9=4,6,8,10,11,12
+10=1,2,3,4,6,8
+11=6,8,9,10,11,12
+12=1,2,3,4,5,6
+
+[TREADLING]
+1=1
+2=2
+3=3
+4=4
+5=5
+6=6
+7=7
+8=8
+9=9
+10=10
+11=11
+12=12
+13=1
+14=2
+15=3
+16=4
+17=5
+18=6
+19=7
+20=8
+21=9
+22=10
+23=11
+24=12
+25=1
+26=2
+27=3
+28=4
+29=5
+30=6
+31=7
+32=8
+33=9
+34=10
+35=11
+36=12
+
+[WARP COLORS]
+1=2
+2=1
+3=2
+4=1
+5=2
+6=1
+7=2
+8=1
+9=2
+10=1
+11=2
+12=1
+13=2
+14=1
+15=2
+16=1
+17=2
+18=1
+19=2
+20=1
+21=2
+22=1
+23=2
+24=1
+25=2
+26=1
+27=2
+28=1
+29=2
+30=1
+31=2
+32=1
+33=2
+34=1
+35=2
+36=1
+
+[WEFT COLORS]
+1=3
+2=4
+3=3
+4=4
+5=3
+6=4
+7=3
+8=4
+9=3
+10=4
+11=3
+12=4
+13=3
+14=4
+15=3
+16=4
+17=3
+18=4
+19=3
+20=4
+21=3
+22=4
+23=3
+24=4
+25=3
+26=4
+27=3
+28=4
+29=3
+30=4
+31=3
+32=4
+33=3
+34=4
+35=3
+36=4
+
+[NOTES]
+1=Drawdown digitized by Handweaving.net (draft #62785) from A Handbook of Weaves, G. H. Oelsner, published 1915. Draft re-derived from the drawdown by Loomination.
+
+[PRIVATE LOOMINATION META]
+Mode=treadle
+End Numbering=rtl
+Tieup Corner=tr
+Source=A Handbook of Weaves, G. H. Oelsner (The Macmillan Company)
+Source Year=1915
+License=public-domain
+Transcribed By=Handweaving.net draft #62785
