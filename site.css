@@ -46,3 +46,36 @@ body { margin: 0; background: #fbf9f5; }
 .ldm-account-menu small { color: var(--ldm-muted); overflow-wrap: anywhere; }
 .ldm-account-menu small:empty { display: none; }
 .ldm-account-menu button { font: inherit; cursor: pointer; align-self: flex-start; margin-top: 0.25rem; padding: 0.3em 0.8em; border-radius: var(--ldm-radius); border: 1px solid var(--ldm-line); background: var(--ldm-bg); color: var(--ldm-fg); }
+
+/* Landing page (index.html): the loom photo fills the screen, words on the dark left side. */
+.hero { position: relative; min-height: 100svh; display: flex; align-items: center; padding: 0; overflow: hidden; background: #2a1d12; }
+.hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 65% center; }
+.hero::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgb(24 16 9 / 0.85) 0%, rgb(24 16 9 / 0.6) 40%, rgb(24 16 9 / 0) 72%); }
+.hero-text { position: relative; z-index: 2; max-width: 34rem; padding: 2rem clamp(16px, 6vw, 5rem); color: #fbf6ee; }
+.hero-text h1 { margin: 0 0 0.75rem; font-size: clamp(2.6rem, 7vw, 4.5rem); line-height: 1.05; letter-spacing: 0.01em; }
+.hero-text p { margin: 0 0 2rem; font-size: clamp(1.05rem, 2.2vw, 1.3rem); line-height: 1.5; color: #efe6d8; }
+.hero-links { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.hero-links a { display: inline-block; padding: 0.75rem 1.4rem; border-radius: var(--ldm-radius); font-size: 1.05rem; font-weight: 600; text-decoration: none; }
+.hero-links .hero-primary { background: #c8582a; color: #fff; border: 2px solid #c8582a; }
+.hero-links .hero-primary:hover { background: #b04a1f; border-color: #b04a1f; }
+.hero-links .hero-secondary { color: #fbf6ee; border: 2px solid rgb(251 246 238 / 0.8); }
+.hero-links .hero-secondary:hover { background: rgb(251 246 238 / 0.12); }
+.hero-links a:focus-visible { outline: 3px solid #fbf6ee; outline-offset: 3px; }
+.hero-footer { padding-inline: 16px; }
+@media (max-width: 700px) {
+  /* Words at the bottom over a darker band; the cloth and shuttle stay visible above. */
+  .hero { align-items: flex-end; }
+  .hero-image { object-position: 70% center; }
+  .hero::before { background: linear-gradient(0deg, rgb(24 16 9 / 0.9) 0%, rgb(24 16 9 / 0.65) 45%, rgb(24 16 9 / 0) 75%); }
+  .hero-text { padding-bottom: 2.5rem; }
+}
+
+/* About page */
+.about { max-width: 42rem; font-size: 1.02rem; }
+.about-image { width: 100%; height: auto; aspect-ratio: 16 / 6; object-fit: cover; object-position: 65% 60%; border-radius: var(--ldm-radius); display: block; }
+.about h2 { font-size: 1.8rem; margin: 1.25rem 0 0.5rem; }
+.about h3 { margin: 1.75rem 0 0.4rem; }
+.about-lead { font-size: 1.15rem; }
+.about-steps { padding-left: 1.4rem; }
+.about-steps li { margin-bottom: 0.6rem; }
+.about-go { margin: 2rem 0 0; }

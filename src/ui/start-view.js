@@ -14,11 +14,6 @@ import { log } from './debug.js';
 const isSignedIn = () => !!teatherApi()?.isSignedIn();
 
 export function mountStart(root, { libraryUrl, designerUrl, aiUrl, imageToWifUrl }) {
-  // The library used to be the home page; send its old links (#draft=hw-12871) there.
-  if (location.hash.length > 1 && libraryUrl) {
-    location.replace(libraryUrl + location.hash);
-    return;
-  }
   const current = saved.loadCurrent();
 
   root.classList.add('ldm', 'ldm-start');

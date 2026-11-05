@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About · Loomination</title>
+  <meta name="description" content="Why Loomination exists, who makes it, and how it works: free weaving-draft management for every weaver.">
+  <link rel="stylesheet" href="src/loomination.css">
+  <link rel="stylesheet" href="site.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 4 4%27%3E%3Cpath fill=%27%23263f78%27 d=%27M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM2 0h1v1H2zM3 1h1v1H3zM0 2h1v1H0zM1 3h1v1H1z%27/%3E%3C/svg%3E">
+</head>
+<body>
+  <div class="ldm">
+    <header class="site-header">
+      <h1><a href="./">Loomination</a></h1>
+      <nav class="site-steps" aria-label="Steps">
+        <a href="start.html" data-step="choose"><span>1</span> Choose a draft</a>
+        <a href="designer.html" data-step="design"><span>2</span> Design</a>
+        <a href="loom.html" data-step="loom"><span>3</span> Loom setup</a>
+        <a href="warp.html" data-step="warp"><span>4</span> Warp plan</a>
+      </nav>
+    </header>
+    <main>
+      <article class="about">
+        <img class="about-image" src="images/loom-hero.jpg" width="2048" height="1152" alt="">
+        <h2>About Loomination</h2>
+        <p class="about-lead">Loomination makes managing weaving drafts freely available to everyone. There's nothing to buy and nothing to install, and you don't need an account to use it.</p>
+
+        <h3>Who makes it</h3>
+        <p>Loomination is the project of a retired information systems professor whose wife loves to weave. It's built for her, and shared freely with every other weaver.</p>
+
+        <h3>How it works</h3>
+        <p>Everything follows the same four steps you see across the top of every page. Each step works on the one draft you chose, and a small picture of it stays in the corner so you always know which one that is.</p>
+        <ol class="about-steps">
+          <li>
+            <strong>Choose a draft.</strong>
+            Browse thousands of historical drafts in the library, open one of your saved drafts, open a .wif file from any weaving program, read one from a picture of a drawdown, ask a chat AI for suggestions, or start from a blank draft.
+          </li>
+          <li>
+            <strong>Design.</strong>
+            Change the threading, tie-up, treadling and colors and watch the cloth update as you go. You can skip this step if the draft is already just what you want.
+          </li>
+          <li>
+            <strong>Loom setup.</strong>
+            Describe your loom (how many shafts and treadles, what kind of shed, which reeds you own) and get printable instructions for threading, sleying, tying up and treadling the draft on it.
+          </li>
+          <li>
+            <strong>Warp plan.</strong>
+            Enter the size of what you're making and the yarn you'll use to get the number of ends, the warp length and how much yarn of each color you need.
+          </li>
+        </ol>
+
+        <h3>Saving your work</h3>
+        <p>Loomination works without signing in, but then your work is kept only in the browser you're using. Sign in with a Google account, using <strong>Save to Google Drive</strong> at the top of any step, and your progress is saved and can be recalled anywhere you sign in:</p>
+        <ul>
+          <li>Drafts you save are kept as .wif files in a Loomination folder in your own Google Drive, so other weaving programs can open them too.</li>
+          <li>Your looms, warp plans and yarn stash come back on any computer or phone.</li>
+          <li>If you switch to another draft while the current one has unsaved changes, it's saved to My drafts automatically, so nothing is lost.</li>
+        </ul>
+
+        <h3>Where the drafts come from</h3>
+        <p>The library's drafts come from weaving books published in 1930 or earlier, which are in the public domain in the United States, as digitized by <a href="https://www.handweaving.net">Handweaving.net</a>. See the <a href="library/README.md">library notes</a> for the sources.</p>
+
+        <p class="about-go"><a class="ldm-button ldm-primary" href="start.html">Get started</a></p>
+      </article>
+      <footer class="site-footer">
+        Something not working? <a href="debug.html">Debug log</a>.
+      </footer>
+    </main>
+  </div>
+  <!-- Saves drafts and settings to the weaver's own Google Drive when they sign in. Optional: pages work without it.
+       async, so a slow teather.pages.dev never holds up the page; main.js waits for it briefly. -->
+  <script async src="https://teather.pages.dev/v1/teather.js"></script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

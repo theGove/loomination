@@ -22,7 +22,7 @@ import { mountAccount } from './ui/account.js';
 
 const defaults = {
   libraryBase: new URL('../library/', import.meta.url).href,
-  startUrl: new URL('../', import.meta.url).href,
+  startUrl: new URL('../start.html', import.meta.url).href,
   libraryUrl: new URL('../library.html', import.meta.url).href,
   designerUrl: new URL('../designer.html', import.meta.url).href,
   loomUrl: new URL('../loom.html', import.meta.url).href,

@@ -4,32 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Loomination</title>
-  <meta name="description" content="Free weaving-draft tools: historical public-domain drafts, a draft designer, and loom setup help.">
+  <meta name="description" content="Free weaving-draft tools: thousands of historical public-domain drafts, a draft designer, loom setup instructions and warp planning.">
   <link rel="stylesheet" href="src/loomination.css">
   <link rel="stylesheet" href="site.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 4 4%27%3E%3Cpath fill=%27%23263f78%27 d=%27M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM2 0h1v1H2zM3 1h1v1H3zM0 2h1v1H0zM1 3h1v1H1z%27/%3E%3C/svg%3E">
+  <link rel="preload" as="image" href="images/loom-hero.jpg">
+  <script>
+    // The library used to be the home page; send its old links (#draft=hw-12871) there.
+    if (location.hash.length > 1) location.replace(`library.html${location.hash}`);
+  </script>
 </head>
 <body>
   <div class="ldm">
-    <header class="site-header">
-      <h1><a href="./">Loomination</a></h1>
-      <nav class="site-steps" aria-label="Steps">
-        <a href="./" data-step="choose" aria-current="page"><span>1</span> Choose a draft</a>
-        <a href="designer.html" data-step="design"><span>2</span> Design</a>
-        <a href="loom.html" data-step="loom"><span>3</span> Loom setup</a>
-        <a href="warp.html" data-step="warp"><span>4</span> Warp plan</a>
-      </nav>
-    </header>
-    <main>
-      <div data-loomination="start"></div>
-      <footer class="site-footer">
-        Something not working? <a href="debug.html">Debug log</a>.
-      </footer>
+    <main class="hero">
+      <img class="hero-image" src="images/loom-hero.jpg" width="2048" height="1152"
+        alt="A wooden floor loom with a colorful patterned cloth on it, a shuttle resting on the weaving, and shelves of yarn cones behind.">
+      <div class="hero-text">
+        <h1>Loomination</h1>
+        <p>Find a weaving draft, make it your own, and get it onto your loom. Free, for every weaver.</p>
+        <div class="hero-links">
+          <a class="hero-primary" href="start.html">Get started</a>
+          <a class="hero-secondary" href="about.html">About Loomination</a>
+        </div>
+      </div>
     </main>
+    <footer class="site-footer hero-footer">
+      Drafts come from books published in 1930 or earlier (US public domain), digitized by
+      <a href="https://www.handweaving.net">Handweaving.net</a>.
+      Something not working? <a href="debug.html">Debug log</a>.
+    </footer>
   </div>
-  <!-- Saves drafts and settings to the weaver's own Google Drive when they sign in. Optional: pages work without it.
-       async, so a slow teather.pages.dev never holds up the page; main.js waits for it briefly. -->
-  <script async src="https://teather.pages.dev/v1/teather.js"></script>
-  <script type="module" src="src/main.js"></script>
 </body>
 </html>
