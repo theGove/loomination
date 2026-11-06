@@ -67,7 +67,8 @@ function resolve(state) {
     : count ? `${count} ${fiber.noun}` : 'this yarn';
   if (state.yarnMode === 'sample') {
     const sample = sampleOf(state);
-    const weighed = { preset: null, theory: null, systemId: fiber.systems[0] ?? '', name: fiber.noun === 'yarn' ? 'weighed yarn' : `weighed ${fiber.noun}` };
+    // The fiber doesn't matter here: length over weight is the whole answer.
+    const weighed = { preset: null, theory: null, systemId: '', name: 'weighed yarn' };
     return sample ? { ...weighed, ...sample, source: 'sample' } : { ...weighed, ypp: 0, source: null };
   }
   const base = { preset: usual, theory, systemId, name };
@@ -103,9 +104,9 @@ export function mountConeEstimator(root, { aiUrl }) {
   root.innerHTML = `
     <form class="ldm-loom-form" aria-label="Cone or tube">
       <h2>The yarn</h2>
-      <label class="ldm-field">Fiber <select name="fiber">${fiberOptions}</select></label>
       ${tabList('yarnMode', 'How you know the yarn', [['known', 'Known count'], ['sample', 'Weigh a sample']])}
       ${tabPanel('yarnMode', 'known', `
+        <label class="ldm-field">Fiber <select name="fiber">${fiberOptions}</select></label>
         <label class="ldm-field"><span data-count-label>Count</span> <input type="text" name="count" list="ldm-cone-counts" autocomplete="off" spellcheck="false"></label>
         <datalist id="ldm-cone-counts"></datalist>
         <label class="ldm-field" data-system>Count system <select name="system"></select></label>
@@ -254,15 +255,15 @@ export function mountConeEstimator(root, { aiUrl }) {
     const pct = Math.round(sample.spread * 100);
     const tooSmall = state.sampleGrams < advice.grams;
     const yards = state.sampleLength * TO_YARDS[state.sampleUnit];
-    let count = '';
-    if (y.systemId && COUNT_SYSTEMS[y.systemId]) {
-      const sys = COUNT_SYSTEMS[y.systemId];
-      const plies = 2;
-      const c = countFromYpp(y.systemId, sample.ypp, plies);
-      const near = Math.max(1, Math.round(c));
-      const written = (n) => (plies === 1 ? `${n}/1` : sys.order === 'ply/count' ? `${plies}/${n}` : `${n}/${plies}`);
-      count = ` In ${sys.short} that’s about ${written(+c.toFixed(1))}${Math.abs(c / near - 1) <= 0.08 && near !== +c.toFixed(1) ? `, close to ${written(near)}` : ''}.`;
-    }
+    // The same yarn as a 2-ply count in each common system, since the fiber
+    // (and so which system its label would use) may not be known.
+    const as2ply = (systemId) => {
+      const sys = COUNT_SYSTEMS[systemId];
+      const c = countFromYpp(systemId, sample.ypp, 2);
+      const n = Math.abs(c / Math.round(c) - 1) <= 0.03 ? Math.round(c) : +c.toFixed(1); // whole if within 3%
+      return `${sys.order === 'ply/count' ? `2/${n}` : `${n}/2`} in ${sys.short}`;
+    };
+    const count = ` As a 2-ply count that’s about ${as2ply('cotton')}, ${as2ply('lea')} (linen) or ${as2ply('worsted')}.`;
     return `<p>${fmt(yards)} yards weighing ${g(state.sampleGrams)}: <strong>${fmt(sample.ypp)} yd/lb</strong>, within about ±${pct}%.${count}</p>`
       + (tooSmall ? `<p class="ldm-warn">That’s under the ${g(advice.grams)} this scale needs to be reliable. Measure a longer length.</p>` : '')
       + (tooSmall ? tip : '');
