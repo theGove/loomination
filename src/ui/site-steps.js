@@ -12,6 +12,20 @@ export function mountSteps(header, { designerUrl }) {
   const nav = header.querySelector('.site-steps');
   if (!nav) return;
 
+  // The Tools menu is a <details>; close it on a click elsewhere or Escape.
+  const tools = nav.querySelector('.site-tools');
+  if (tools) {
+    document.addEventListener('click', (e) => {
+      if (tools.open && !tools.contains(e.target)) tools.open = false;
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && tools.open) {
+        tools.open = false;
+        tools.querySelector('summary').focus();
+      }
+    });
+  }
+
   const chip = document.createElement('a');
   chip.className = 'site-draft';
   chip.href = designerUrl;

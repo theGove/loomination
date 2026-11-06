@@ -1,5 +1,6 @@
 import { test, assert, assertEqual } from './harness.js';
 import { coreArea, coreWeight, yarnOnCore, GRAMS_PER_POUND } from '../src/core/cone.js';
+import { YARNS, FIBERS, COUNT_SYSTEMS, parseCount, yppFromCount, presetFor } from '../src/core/yarns.js';
 
 const near = (a, b, tol) => Math.abs(a - b) <= tol;
 
@@ -39,4 +40,44 @@ test('an empty core gives no yarn, never negative', () => {
   const r = yarnOnCore({ grossGrams: 30, core: { grams: 37, low: 30, high: 45 }, ypp: 3360 });
   assertEqual(r.yards, 0);
   assertEqual(r.low, 0);
+});
+
+test('yarn counts: yards per pound from fiber and count', () => {
+  assertEqual(yppFromCount('cotton', '10/2').ypp, 4200, '10/2 cotton');
+  assertEqual(yppFromCount('lea', '10/2').ypp, 1500, '10/2 linen');
+  assertEqual(yppFromCount('worsted', '2/18').ypp, 5040, '2/18 worsted');
+  assertEqual(yppFromCount('lea', '6/4').ypp, 450, '6/4 linen');
+  assertEqual(yppFromCount('cotton', '8').ypp, 6720, 'a bare count is a singles');
+  assert(near(yppFromCount('nm', '20/2').ypp, 4961, 1), 'Nm 20/2');
+  assertEqual(yppFromCount('cotton', 'lots'), null);
+});
+
+test('yarn counts: the larger number is the count, however it is written', () => {
+  for (const t of ['8/2', '2/8', '8-2', '8 / 2', '8x2', '8/2 bamboo']) {
+    const c = parseCount(t);
+    assertEqual(c.count, 8, t);
+    assertEqual(c.plies, 2, t);
+  }
+  assertEqual(parseCount(''), null);
+});
+
+test('yarn counts: every preset with a count is near what its count says', () => {
+  for (const y of YARNS.filter((y) => y.count)) {
+    const fiber = FIBERS.find((f) => f.id === y.kind);
+    const t = yppFromCount(y.system ?? fiber.systems[0], y.count);
+    // 2/8 worsted is sold well under its count; the rest are within 15%.
+    assert(Math.abs(t.ypp / y.ypp - 1) < (y.id === 'wool-2-8-worsted' ? 0.4 : 0.15), `${y.id}: ${t.ypp} vs ${y.ypp}`);
+  }
+  for (const f of FIBERS) for (const s of f.systems) assert(COUNT_SYSTEMS[s], `${f.id} system ${s}`);
+  for (const y of YARNS) assert(FIBERS.some((f) => f.id === y.kind), `${y.id} kind`);
+});
+
+test('yarn counts: a fiber and count find the usual figure', () => {
+  assertEqual(presetFor('cotton', '8/4')?.id, 'cotton-8-4');
+  assertEqual(presetFor('cotton', ' 8 / 4 ')?.id, 'cotton-8-4');
+  assertEqual(presetFor('linen', '10/2')?.id, 'linen-10-2');
+  assertEqual(presetFor('rayon', '8/2 bamboo')?.id, 'bamboo-8-2');
+  assertEqual(presetFor('knitting', 'DK weight')?.id, 'knit-dk');
+  assertEqual(presetFor('cotton', '12/2'), null, 'no 12/2 cotton preset');
+  assertEqual(presetFor('cotton', '10/2 linen'), null, 'words must match a name exactly');
 });
