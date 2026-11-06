@@ -277,6 +277,11 @@
 .ldm-weight .ldm-field:first-child { flex: 1; }
 .ldm-big { font-size: 1.6rem; margin: 0.5rem 0; }
 .ldm-cone .ldm-instructions > button { margin-top: 0.5rem; }
+.ldm-sample { margin: 0 0 1rem; padding: 0.5rem 0.75rem; border: 1px solid var(--ldm-line); border-radius: var(--ldm-radius); }
+.ldm-sample summary { cursor: pointer; color: var(--ldm-accent); font-size: 0.9rem; }
+.ldm-sample[open] summary { margin-bottom: 0.5rem; }
+.ldm-sample p { margin: 0.4rem 0; }
+.ldm-sample .ldm-warn { color: #a56300; }
 
 /* Step 1: choose a draft */
 .ldm-start { max-width: 60rem; }

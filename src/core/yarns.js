@@ -147,3 +147,10 @@ export function presetFor(fiberId, text) {
     return p && p.count === c.count && p.plies === c.plies;
   }) ?? null;
 }
+
+// The count a yarn of `ypp` yards per pound would have in a system, for a
+// given number of plies: the reverse of yppFromCount.
+export function countFromYpp(systemId, ypp, plies = 2) {
+  const sys = COUNT_SYSTEMS[systemId];
+  return sys && ypp > 0 ? (ypp * plies) / sys.base : null;
+}

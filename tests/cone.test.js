@@ -1,6 +1,6 @@
 import { test, assert, assertEqual } from './harness.js';
-import { coreArea, coreWeight, yarnOnCore, GRAMS_PER_POUND } from '../src/core/cone.js';
-import { YARNS, FIBERS, COUNT_SYSTEMS, parseCount, yppFromCount, presetFor } from '../src/core/yarns.js';
+import { coreArea, coreWeight, yarnOnCore, yppFromSample, sampleAdvice, GRAMS_PER_POUND } from '../src/core/cone.js';
+import { YARNS, FIBERS, COUNT_SYSTEMS, parseCount, yppFromCount, presetFor, countFromYpp } from '../src/core/yarns.js';
 
 const near = (a, b, tol) => Math.abs(a - b) <= tol;
 
@@ -80,4 +80,32 @@ test('yarn counts: a fiber and count find the usual figure', () => {
   assertEqual(presetFor('knitting', 'DK weight')?.id, 'knit-dk');
   assertEqual(presetFor('cotton', '12/2'), null, 'no 12/2 cotton preset');
   assertEqual(presetFor('cotton', '10/2 linen'), null, 'words must match a name exactly');
+});
+
+test('weighed sample: yards per pound and how far it can be off', () => {
+  // 100 yd of 8/2 cotton weighs 453.592 / 3360 * 100 = 13.5 g
+  const s = yppFromSample({ yards: 100, grams: 13.5, scaleStep: 0.1 });
+  assert(near(s.ypp, 3360, 5), `ypp ${s.ypp}`);
+  assert(near(s.spread, 0.05 / 13.5 + 0.01, 1e-9), 'half a step over the weight, plus 1% for the length');
+  assertEqual(yppFromSample({ yards: 0, grams: 5 }), null);
+  assertEqual(yppFromSample({ yards: 5, grams: 0 }), null);
+  // The wider spread carries into the yardage range.
+  const r = yarnOnCore({ grossGrams: 500, core: { grams: 40 }, ypp: 3360, spread: 0.2 });
+  assert(near(r.high / r.low, 1.2 / 0.8, 1e-9), 'a ±20% figure gives a ±20% range');
+});
+
+test('weighed sample: how long a sample to measure', () => {
+  // 25 steps of the scale: 25 g on a kitchen scale is 185 yd of 8/2 cotton.
+  const kitchen = sampleAdvice({ ypp: 3360, scaleStep: 1 });
+  assertEqual(kitchen.grams, 25);
+  assert(near(kitchen.yards, (25 / GRAMS_PER_POUND) * 3360, 0.01));
+  // A jeweller's scale needs only 0.25 g, but never less than 10 yards.
+  assertEqual(sampleAdvice({ ypp: 3360, scaleStep: 0.01 }).yards, 10);
+  assertEqual(sampleAdvice({ ypp: 0, scaleStep: 1 }).yards, null);
+});
+
+test('count from yards per pound', () => {
+  assertEqual(countFromYpp('cotton', 3360, 2), 8);
+  assertEqual(countFromYpp('lea', 1500, 2), 10);
+  assertEqual(countFromYpp('nope', 1500, 2), null);
 });

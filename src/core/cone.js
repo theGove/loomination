@@ -37,7 +37,8 @@ export function coreWeight({ shape, length, baseDiameter, topDiameter, thickness
 
 // Yarn on the core: { netGrams, yards, meters, low, high } (low/high in yards).
 // core is { grams, low, high } from coreWeight, or a weighed core as { grams }.
-export function yarnOnCore({ grossGrams, core, ypp }) {
+// spread is how far ypp may be off either way (a fraction).
+export function yarnOnCore({ grossGrams, core, ypp, spread = YPP_SPREAD }) {
   const coreLow = core.low ?? core.grams;
   const coreHigh = core.high ?? core.grams;
   const netGrams = Math.max(0, grossGrams - core.grams);
@@ -47,7 +48,36 @@ export function yarnOnCore({ grossGrams, core, ypp }) {
     netGrams,
     yards,
     meters: yards * 0.9144,
-    low: yardsFor(grossGrams - coreHigh, ypp * (1 - YPP_SPREAD)),
-    high: yardsFor(grossGrams - coreLow, ypp * (1 + YPP_SPREAD)),
+    low: yardsFor(grossGrams - coreHigh, ypp * (1 - spread)),
+    high: yardsFor(grossGrams - coreLow, ypp * (1 + spread)),
   };
+}
+
+// Yards per pound from weighing a measured length of the yarn itself.
+//
+// A scale rounds to its smallest step, so a reading can be off by half a step;
+// on a small sample that is a large share. Measuring the length by hand adds
+// about 1% more. A sample is reliable when it weighs at least SAMPLE_STEPS
+// times the scale's step (rounding within ±2%) and is at least
+// MIN_SAMPLE_YARDS long (so an inch or two of slack doesn't matter).
+export const SCALES = [
+  { step: 1, name: 'Kitchen (1 g)' },
+  { step: 0.1, name: 'Postal or pocket (0.1 g)' },
+  { step: 0.01, name: "Jeweller's (0.01 g)" },
+];
+export const SAMPLE_STEPS = 25;
+export const MIN_SAMPLE_YARDS = 10;
+const LENGTH_SPREAD = 0.01;
+
+// { ypp, spread } from a sample of `yards` weighing `grams`, or null.
+export function yppFromSample({ yards, grams, scaleStep = 1 }) {
+  if (!(yards > 0) || !(grams > 0)) return null;
+  return { ypp: (yards / grams) * GRAMS_PER_POUND, spread: scaleStep / 2 / grams + LENGTH_SPREAD };
+}
+
+// How big a sample to weigh: { grams, yards }. yards is null when the yarn's
+// yards per pound isn't known even roughly.
+export function sampleAdvice({ ypp, scaleStep = 1 }) {
+  const grams = SAMPLE_STEPS * scaleStep;
+  return { grams, yards: ypp > 0 ? Math.max(MIN_SAMPLE_YARDS, (grams / GRAMS_PER_POUND) * ypp) : null };
 }
