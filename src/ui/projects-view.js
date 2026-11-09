@@ -42,6 +42,10 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
   function route() {
     leave();
     leave = () => {};
+    if (!store.signedIn()) {
+      showSignIn();
+      return;
+    }
     const params = new URLSearchParams(location.hash.slice(1));
     const id = params.get('p');
     if (params.has('new')) {
@@ -64,9 +68,6 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
     }
     window.scrollTo(0, 0);
   }
-  window.addEventListener('hashchange', route);
-  route();
-
   const signIn = async () => {
     const T = sync.teatherApi();
     if (!T) {
@@ -81,6 +82,35 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       return false;
     }
   };
+
+  window.addEventListener('hashchange', route);
+  sync.teatherApi()?.onAuthChange?.(() => route());
+  route();
+
+  // My Projects lives in the weaver's Google Drive, so it needs sign-in.
+  function showSignIn() {
+    const available = !!sync.teatherApi();
+    root.innerHTML = `
+      <header class="ldm-proj-head">
+        <h2>My Projects</h2>
+        <p>A record of what you've woven: the plan, how it measured up, the yarns, the finishing, a journal and photos.</p>
+      </header>
+      <section class="ldm-proj-signin">
+        <p><strong>Sign in first.</strong> My Projects is kept in your own Google Drive, so you need to sign in with “Save to Google Drive” to use it.</p>
+        ${available
+          ? '<button type="button" class="ldm-primary">Sign in with Google</button>'
+          : '<p class="ldm-hint">Google sign-in can’t be reached right now. Check your connection and reload the page.</p>'}
+      </section>`;
+    root.querySelector('.ldm-proj-signin button')?.addEventListener('click', async (ev) => {
+      ev.target.disabled = true;
+      ev.target.textContent = 'Signing in…';
+      if (await signIn()) route();
+      else {
+        ev.target.disabled = false;
+        ev.target.textContent = 'Sign in with Google';
+      }
+    });
+  }
 
   // ---------------------------------------------------------------- list
 

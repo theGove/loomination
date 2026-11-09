@@ -189,6 +189,12 @@ export function mountWarpPlanner(root, { startUrl, coneUrl, projectsUrl }) {
 
   function projectControls() {
     if (!projectsUrl) return '';
+    if (!myProjects.signedIn()) {
+      return `<div class="ldm-warp-project">
+        <button type="button" data-proj="signin">Save to My Projects</button>
+        <span class="ldm-hint">My Projects is kept in your Google Drive: you'll be asked to sign in first.</span>
+      </div>`;
+    }
     const linked = linkedProject();
     return `<div class="ldm-warp-project">
       ${linked
@@ -202,6 +208,20 @@ export function mountWarpPlanner(root, { startUrl, coneUrl, projectsUrl }) {
   async function saveToProjects(e) {
     const btn = e.target.closest('[data-proj]');
     if (!btn) return;
+    if (btn.dataset.proj === 'signin') {
+      const T = sync.teatherApi();
+      if (!T) {
+        btn.nextElementSibling.textContent = "Google sign-in can't be reached right now. Check your connection and reload the page.";
+        return;
+      }
+      try {
+        await T.signIn();
+      } catch (err) {
+        if (err && !['cancelled', 'timeout'].includes(err.code)) btn.nextElementSibling.textContent = err.message || 'Sign-in did not finish.';
+        return;
+      }
+      btn.dataset.proj = 'new';
+    }
     const snap = currentSnapshot(draft);
     const linked = btn.dataset.proj === 'update' ? linkedProject() : null;
     const project = linked ? updateSnapshot(linked, snap) : newProject(snap, { draftId: loadCurrentId() });
