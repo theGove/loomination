@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Projects · Loomination</title>
+  <meta name="description" content="A record of each weaving project: the plan, measurements before and after washing, yarns, finishing, a journal and photos.">
+  <link rel="stylesheet" href="src/loomination.css">
+  <link rel="stylesheet" href="site.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 4 4%27%3E%3Cpath fill=%27%23263f78%27 d=%27M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM2 0h1v1H2zM3 1h1v1H3zM0 2h1v1H0zM1 3h1v1H1z%27/%3E%3C/svg%3E">
+</head>
+<body>
+  <div class="ldm">
+    <header class="site-header">
+      <h1><a href="./">Loomination</a></h1>
+      <nav class="site-steps" aria-label="Steps">
+        <a href="start.html" data-step="choose"><span>1</span> Choose a draft</a>
+        <a href="designer.html" data-step="design"><span>2</span> Design</a>
+        <a href="loom.html" data-step="loom"><span>3</span> Loom setup</a>
+        <a href="warp.html" data-step="warp"><span>4</span> Warp plan</a>
+        <details class="site-tools site-tools-current">
+          <summary>Tools</summary>
+          <ul>
+            <li><a href="projects.html" aria-current="page">My Projects</a></li>
+            <li><a href="yarn.html">Thread length calculator</a></li>
+            <li><a href="tools/image-to-wif.html">Image to WIF</a></li>
+            <li><a href="https://teather.pages.dev/manage?site=loomination.org" target="_blank" rel="noopener">Manage my data</a></li>
+          </ul>
+        </details>
+      </nav>
+    </header>
+    <main>
+      <div data-loomination="projects"></div>
+    </main>
+  </div>
+  <!-- Saves drafts and settings to the weaver's own Google Drive when they sign in. Optional: pages work without it.
+       async, so a slow teather.pages.dev never holds up the page; main.js waits for it briefly. -->
+  <script async src="https://teather.pages.dev/v1/teather.js"></script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

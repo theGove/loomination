@@ -15,6 +15,7 @@ import { layoutDraft, paintDraft, hitTest } from './draft-view.js';
 import * as saved from './saved-drafts.js';
 import { teatherApi } from './sync.js';
 import { timed } from './debug.js';
+import { downloadBlob } from './html.js';
 
 const isSignedIn = () => !!teatherApi()?.isSignedIn();
 
@@ -533,16 +534,6 @@ export function readDraftFile(text, name = '') {
 
 function download(name, text, type) {
   downloadBlob(name, new Blob([text], { type }));
-}
-
-function downloadBlob(name, blob) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 const hex = (rgb) => `#${rgb.map((v) => v.toString(16).padStart(2, '0')).join('')}`;

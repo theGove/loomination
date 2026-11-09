@@ -2,38 +2,29 @@
 // color, for a project woven from one draft. Inputs are remembered (and synced
 // when signed in; see sync.js); the arithmetic lives in core/warp-calc.js.
 
-import { repeatUnit, sleyFor } from '../core/loom.js';
-import { planWarp, structureOf, DEFAULT_PROJECT } from '../core/warp-calc.js';
-import { yarnsByFiber, yarnById } from '../core/yarns.js';
+import { sleyFor } from '../core/loom.js';
+import { WARP_DEFAULTS as DEFAULTS, withWarpDefaults, resolveWarpPlan } from '../core/warp-plan.js';
+import { yarnsByFiber } from '../core/yarns.js';
 import { loadPageDraft } from './page-draft.js';
 import { listLooms, loadLoom, chooseLoom, loomOptions } from './loom-profile.js';
 import { escapeHtml } from './html.js';
 import * as sync from './sync.js';
+import { WARP_PLAN_KEY as PLAN_KEY, myProjects, currentSnapshot } from './my-projects.js';
+import { loadCurrentProject, setCurrentProject, loadCurrentId } from './saved-drafts.js';
+import { newProject, updateSnapshot } from '../core/project.js';
 
-const PLAN_KEY = 'warpPlan';
-const DEFAULTS = {
-  ...DEFAULT_PROJECT,
-  warpYarn: 'cotton-8-2',
-  warpYpp: 0,          // used when warpYarn is 'custom'
-  weftYarn: 'same',
-  weftYpp: 0,
-  epi: 0,              // 0 = suggested from the yarn and structure
-  ppi: 0,              // 0 = same as epi
-  onHand: {},          // 'warp-1' -> yards
-};
 // Fields shown as percentages in the form and stored as fractions.
 const PERCENT = ['drawIn', 'shrinkWidth', 'takeUp', 'shrinkLength', 'weftTakeUp'];
 
-function loadInputs() {
-  const saved = sync.get(PLAN_KEY);
-  return { ...DEFAULTS, ...(saved && typeof saved === 'object' ? saved : {}) };
+export function loadInputs() {
+  return withWarpDefaults(sync.get(PLAN_KEY));
 }
 
 function saveInputs(inputs) {
   sync.set(PLAN_KEY, inputs);
 }
 
-export function mountWarpPlanner(root, { startUrl, coneUrl }) {
+export function mountWarpPlanner(root, { startUrl, coneUrl, projectsUrl }) {
   let inputs = loadInputs();
   const draft = loadPageDraft();
   const looms = listLooms();
@@ -127,15 +118,7 @@ export function mountWarpPlanner(root, { startUrl, coneUrl }) {
 
   function render() {
     if (!draft) return;
-    const warpYarn = yarnById(inputs.warpYarn);
-    const weftYarn = inputs.weftYarn === 'same' ? warpYarn : yarnById(inputs.weftYarn);
-    const warpYpp = inputs.warpYarn === 'custom' ? inputs.warpYpp : warpYarn?.ypp ?? 0;
-    const weftYpp = inputs.weftYarn === 'same' ? warpYpp : inputs.weftYarn === 'custom' ? inputs.weftYpp : weftYarn?.ypp ?? 0;
-
-    const structure = structureOf(draft);
-    const suggested = warpYarn ? warpYarn[structure] : 0;
-    const epi = inputs.epi || suggested;
-    const ppi = inputs.ppi || epi;
+    const { warpYarn, warpYpp, weftYpp, structure, suggested, epi, ppi, threadingUnit, plan } = resolveWarpPlan(draft, inputs);
     form.epi.placeholder = suggested ? String(suggested) : 'required';
     form.ppi.placeholder = epi ? String(epi) : '';
 
@@ -143,12 +126,6 @@ export function mountWarpPlanner(root, { startUrl, coneUrl }) {
       out.innerHTML = '<p>Enter the ends per inch for your yarn to plan the warp.</p>';
       return;
     }
-    const threadingUnit = repeatUnit(draft.threading.filter((s) => s > 0)).unit;
-    const plan = planWarp({
-      project: inputs, epi, ppi, threadingUnit,
-      warpColors: draft.warpColors, weftColors: draft.weftColors, warpYpp, weftYpp,
-    });
-
     const sley = sleyFor(epi, loom.reeds);
     const tooWide = loom.widthIn && plan.widthInReed > loom.widthIn;
     const settNote = inputs.epi
@@ -169,6 +146,7 @@ export function mountWarpPlanner(root, { startUrl, coneUrl }) {
         </div>
         <button type="button" data-print>Print</button>
       </header>
+      ${projectControls()}
       <dl class="ldm-facts ldm-summary">
         <div><dt>Ends</dt><dd>${plan.ends}</dd></div>
         <div><dt>Width in reed</dt><dd>${inches(plan.widthInReed)}</dd></div>
@@ -198,7 +176,46 @@ export function mountWarpPlanner(root, { startUrl, coneUrl }) {
       ${yarnSection('Weft', 'weft', plan.weft.byColor, 'picks', draft, weftYpp)}
       <p class="ldm-hint">Yardage includes take-up, shrinkage and loom waste but no spare. "Enough" means at least 10% more than needed.${coneUrl ? ` Not sure what's on a cone? <a href="${coneUrl}">Estimate it from its weight</a>.` : ''}</p>`;
     out.querySelector('[data-print]').addEventListener('click', () => window.print());
+    out.querySelector('.ldm-warp-project')?.addEventListener('click', saveToProjects);
     out.querySelectorAll('[data-onhand]').forEach((el) => updateStatus(el.closest('tr'), el.dataset.onhand));
+  }
+
+  // "Save to My Projects": a new project, or an update to the planned project
+  // this draft was started for (see saved-drafts.js loadCurrentProject).
+  function linkedProject() {
+    const p = myProjects.get(loadCurrentProject());
+    return p && p.status === 'planned' ? p : null;
+  }
+
+  function projectControls() {
+    if (!projectsUrl) return '';
+    const linked = linkedProject();
+    return `<div class="ldm-warp-project">
+      ${linked
+        ? `<button type="button" class="ldm-primary" data-proj="update">Update “${escapeHtml(linked.title || 'Untitled project')}” in My Projects</button>
+           <button type="button" class="ldm-link" data-proj="new">save as a new project instead</button>`
+        : '<button type="button" data-proj="new">Save to My Projects</button>'}
+      <span class="ldm-hint" data-proj-note></span>
+    </div>`;
+  }
+
+  async function saveToProjects(e) {
+    const btn = e.target.closest('[data-proj]');
+    if (!btn) return;
+    const snap = currentSnapshot(draft);
+    const linked = btn.dataset.proj === 'update' ? linkedProject() : null;
+    const project = linked ? updateSnapshot(linked, snap) : newProject(snap, { draftId: loadCurrentId() });
+    try {
+      myProjects.put(project);
+    } catch (err) {
+      out.querySelector('[data-proj-note]').textContent = `Not saved: ${err.message}`;
+      return;
+    }
+    setCurrentProject(project.id);
+    const where = (await myProjects.flush(project.id)).where;
+    render();
+    const note = out.querySelector('[data-proj-note]');
+    note.innerHTML = `${linked ? 'Updated' : 'Saved to My Projects'}${where === 'drive' ? ' and your Google Drive' : ''}. <a href="${escapeHtml(projectsUrl)}#p=${encodeURIComponent(project.id)}">Open the project</a>`;
   }
 
   function yarnSection(label, kind, rows, unit, draft, ypp) {

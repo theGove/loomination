@@ -18,6 +18,9 @@ const CURRENT = 'loomination.current';
 const CURRENT_ID = 'loomination.currentId';
 // Set when the working draft has changes not yet saved to My drafts.
 const DIRTY = 'loomination.currentDirty';
+// The My Projects entry the working draft belongs to, while it's still being
+// planned, so the warp plan page can update that project.
+const PROJECT = 'loomination.currentProject';
 // A one-time message for the next page, e.g. where the previous draft went.
 const NOTICE = 'loomination.notice';
 
@@ -78,6 +81,11 @@ if (typeof window !== 'undefined') window.addEventListener('pagehide', flushCurr
 export const loadCurrentId = () => read(CURRENT_ID);
 export const setCurrentId = (id) => write(CURRENT_ID, id);
 
+// Which My Projects entry the working draft is planned for (cleared whenever
+// another draft is chosen).
+export const loadCurrentProject = () => read(PROJECT);
+export const setCurrentProject = (id) => write(PROJECT, id || null);
+
 export const isDirty = () => read(DIRTY) === true;
 export const setDirty = (dirty) => write(DIRTY, dirty ? true : null);
 
@@ -97,6 +105,7 @@ export async function chooseDraft(draft, id = null) {
   }
   if (!write(CURRENT, draft)) throw new Error("This browser won't keep the draft (site storage is blocked or full).");
   setCurrentId(id);
+  setCurrentProject(null);
   setDirty(false);
   announce();
   return kept;

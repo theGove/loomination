@@ -16,6 +16,7 @@ import { normalizeDraft } from '../core/draft.js';
 import { parseWif, toWif } from '../core/wif.js';
 import * as sync from './sync.js';
 import { log } from './debug.js';
+import { slugify } from './slug.js';
 
 const LOCAL = 'loomination.myDrafts.';
 const OLD_DRAFT = 'draft:';
@@ -23,13 +24,7 @@ const FILE = /^draft-(?:.+-)?(d[a-z0-9]+)\.wif$/i;
 
 /** File name for a draft: "draft-<title>-<id>.wif", the title reduced to what Teather allows. */
 export function fileNameFor(draft, id) {
-  const slug = String(draft?.meta?.title ?? '')
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '') // accents
-    .replace(/[^A-Za-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 50)
-    .replace(/-+$/, '');
+  const slug = slugify(draft?.meta?.title);
   return `draft-${slug ? `${slug}-` : ''}${id}.wif`;
 }
 

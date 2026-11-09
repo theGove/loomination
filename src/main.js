@@ -14,6 +14,7 @@ import { mountWarpPlanner } from './ui/warp-view.js';
 import { mountAiHelper } from './ui/ai-view.js';
 import { mountConeEstimator } from './ui/cone-view.js';
 import { mountStart } from './ui/start-view.js';
+import { mountProjects } from './ui/projects-view.js';
 import { mountSteps } from './ui/site-steps.js';
 import { adoptFromUrl } from './ui/page-draft.js';
 import * as sync from './ui/sync.js';
@@ -30,6 +31,7 @@ const defaults = {
   aiUrl: new URL('../ai.html', import.meta.url).href,
   coneUrl: new URL('../yarn.html', import.meta.url).href,
   imageToWifUrl: new URL('../tools/image-to-wif.html', import.meta.url).href,
+  projectsUrl: new URL('../projects.html', import.meta.url).href,
 };
 
 // Each option can be overridden on the element, e.g. data-library-base="...".
@@ -43,6 +45,7 @@ const views = {
   warp: (el) => mountWarpPlanner(el, options(el)),
   ai: (el) => mountAiHelper(el, options(el)),
   cone: (el) => mountConeEstimator(el, options(el)),
+  projects: (el) => mountProjects(el, options(el)),
 };
 
 // Saved data: move anything from older versions, give teather.js a moment to
