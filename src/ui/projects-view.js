@@ -571,8 +571,7 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
               <button type="button" class="ldm-link" data-del-photo="${e(ph.id)}">Delete</button>
             </div>
           </figure>`).join('')}
-        </div>
-        <dialog class="ldm-proj-viewer"><img alt=""><form method="dialog"><span class="ldm-hint" data-viewer-note></span><button>Close</button></form></dialog>`;
+        </div>`;
     }
 
     // Thumbnails and the cover, fetched from Drive.
@@ -605,12 +604,17 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
     async function viewPhoto(id) {
       const ph = project.photos.find((x) => x.id === id);
       if (!ph) return;
-      let dlg = root.querySelector('.ldm-proj-viewer');
+      // The viewer sits outside the tab panels: a modal dialog inside a hidden
+      // panel opens invisibly and blocks every click on the page.
+      const home = root.closest('.ldm') ?? document.body; // inside .ldm for the colors
+      let dlg = [...home.children].find((el) => el.matches('.ldm-proj-viewer'));
       if (!dlg) {
         dlg = document.createElement('dialog');
         dlg.className = 'ldm-proj-viewer';
         dlg.innerHTML = '<img alt=""><form method="dialog"><span class="ldm-hint" data-viewer-note></span><button>Close</button></form>';
-        root.append(dlg);
+        // A click on the dark backdrop around the photo closes it too.
+        dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
+        home.append(dlg);
       }
       const img = dlg.querySelector('img');
       img.alt = ph.caption || '';
@@ -957,6 +961,7 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       document.removeEventListener('paste', onPaste);
       window.removeEventListener('beforeprint', onBeforePrint);
       window.removeEventListener('afterprint', onAfterPrint);
+      for (const dlg of document.querySelectorAll('.ldm-proj-viewer')) dlg.remove();
       root.classList.remove('ldm-printing');
       root.removeEventListener('input', onInput);
       root.removeEventListener('change', onChange);
