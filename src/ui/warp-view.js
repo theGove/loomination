@@ -7,7 +7,7 @@ import { WARP_DEFAULTS as DEFAULTS, withWarpDefaults, resolveWarpPlan } from '..
 import { yarnsByFiber } from '../core/yarns.js';
 import { loadPageDraft } from './page-draft.js';
 import { listLooms, loadLoom, chooseLoom, loomOptions } from './loom-profile.js';
-import { escapeHtml } from './html.js';
+import { escapeHtml, working } from './html.js';
 import * as sync from './sync.js';
 import { WARP_PLAN_KEY as PLAN_KEY, myProjects, currentSnapshot } from './my-projects.js';
 import { loadCurrentProject, setCurrentProject, loadCurrentId } from './saved-drafts.js';
@@ -69,7 +69,7 @@ export function mountWarpPlanner(root, { startUrl, coneUrl, projectsUrl }) {
       <label class="ldm-inline"><input type="checkbox" name="balance"> Balance the threading</label>
       <p class="ldm-hint">Remembered in this browser.</p>
     </form>
-    <article class="ldm-instructions" aria-live="polite"><p class="ldm-status">Loading…</p></article>`;
+    <article class="ldm-instructions" aria-live="polite"><p class="ldm-status ldm-working">Loading…</p></article>`;
 
   const form = root.querySelector('form');
   const out = root.querySelector('.ldm-instructions');
@@ -208,19 +208,24 @@ export function mountWarpPlanner(root, { startUrl, coneUrl, projectsUrl }) {
   async function saveToProjects(e) {
     const btn = e.target.closest('[data-proj]');
     if (!btn) return;
+    if (btn.disabled) return;
+    const done = working(btn, btn.dataset.proj === 'signin' ? 'Signing in…' : 'Saving…');
     if (btn.dataset.proj === 'signin') {
       const T = sync.teatherApi();
       if (!T) {
+        done();
         btn.nextElementSibling.textContent = "Google sign-in can't be reached right now. Check your connection and reload the page.";
         return;
       }
       try {
         await T.signIn();
       } catch (err) {
+        done();
         if (err && !['cancelled', 'timeout'].includes(err.code)) btn.nextElementSibling.textContent = err.message || 'Sign-in did not finish.';
         return;
       }
       btn.dataset.proj = 'new';
+      btn.textContent = 'Saving…';
     }
     const snap = currentSnapshot(draft);
     const linked = btn.dataset.proj === 'update' ? linkedProject() : null;
@@ -228,6 +233,7 @@ export function mountWarpPlanner(root, { startUrl, coneUrl, projectsUrl }) {
     try {
       myProjects.put(project);
     } catch (err) {
+      done();
       out.querySelector('[data-proj-note]').textContent = `Not saved: ${err.message}`;
       return;
     }

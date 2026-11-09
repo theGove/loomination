@@ -119,8 +119,10 @@ export function mountLibrary(root, { libraryBase, designerUrl }) {
     listedFor = key;
     status.hidden = false;
     status.textContent = 'Loading…';
+    status.classList.add('ldm-working');
     const drafts = await lib.drafts(filter.maxShafts || Infinity, filter.minShafts);
     if (listedFor !== key) return; // a newer filter took over while loading
+    status.classList.remove('ldm-working');
     results = filterDrafts(drafts, filter, books);
     status.textContent = results.length === 1 ? '1 draft' : `${results.length.toLocaleString()} drafts`;
     if (!results.length) status.textContent = drafts.length ? 'No drafts match these filters.' : 'The library is empty.';
@@ -157,7 +159,7 @@ export function mountLibrary(root, { libraryBase, designerUrl }) {
     more.hidden = true;
     status.hidden = true;
     detail.hidden = false;
-    detail.innerHTML = '<p class="ldm-status">Loading…</p>';
+    detail.innerHTML = '<p class="ldm-status ldm-working">Loading…</p>';
     const backParams = filterToParams(filter);
 
     let result;

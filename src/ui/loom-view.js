@@ -40,7 +40,7 @@ export function mountLoomSetup(root, { startUrl, designerUrl, warpUrl }) {
       <label class="ldm-field">Sett, ends per inch <input type="number" name="epi" min="0" max="200" step="0.5" placeholder="optional"></label>
       <p class="ldm-hint">Saved for next time, and on your Google Drive when you sign in.</p>
     </form>
-    <article class="ldm-instructions" aria-live="polite"><p class="ldm-status">Loading…</p></article>`;
+    <article class="ldm-instructions" aria-live="polite"><p class="ldm-status ldm-working">Loading…</p></article>`;
 
   const form = root.querySelector('form');
   const out = root.querySelector('.ldm-instructions');

@@ -17,7 +17,7 @@ import { paintThumbnail } from './draft-view.js';
 import { preparePhoto, imageFiles } from './photo.js';
 import { projectDocument, bookDocument, printDocument, downloadDocument, draftImages } from './project-export.js';
 import { inches, day, projectSheetHtml, SHEET_CSS } from './project-sheet.js';
-import { escapeHtml as e } from './html.js';
+import { escapeHtml as e, working, whileWorking } from './html.js';
 import * as sync from './sync.js';
 import { log } from './debug.js';
 
@@ -102,20 +102,16 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
           : '<p class="ldm-hint">Google sign-in can’t be reached right now. Check your connection and reload the page.</p>'}
       </section>`;
     root.querySelector('.ldm-proj-signin button')?.addEventListener('click', async (ev) => {
-      ev.target.disabled = true;
-      ev.target.textContent = 'Signing in…';
+      const done = working(ev.target, 'Signing in…');
       if (await signIn()) route();
-      else {
-        ev.target.disabled = false;
-        ev.target.textContent = 'Sign in with Google';
-      }
+      else done();
     });
   }
 
   // ---------------------------------------------------------------- list
 
   function showList() {
-    const working = loadCurrent();
+    const current = loadCurrent();
     let filter = 'all';
     root.innerHTML = `
       <header class="ldm-proj-head">
@@ -125,13 +121,13 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
         </div>
       </header>
       <div class="ldm-row ldm-proj-new">
-        ${working
+        ${current
           ? `<button type="button" class="ldm-primary" data-act="new-current">New project from my current plan</button>`
           : `<a class="ldm-button" href="${e(startUrl)}">Choose a draft to start a project</a>`}
         <button type="button" data-act="new-draft">New project from a saved draft</button>
         <button type="button" data-act="book">Make a book of my projects</button>
       </div>
-      ${working ? `<p class="ldm-hint">Your current plan is “${e(working.meta.title || 'Untitled draft')}” with the settings on the Warp plan page.</p>` : ''}
+      ${current ? `<p class="ldm-hint">Your current plan is “${e(current.meta.title || 'Untitled draft')}” with the settings on the Warp plan page.</p>` : ''}
       <section class="ldm-proj-drafts" hidden>
         <h3>Start from a saved draft</h3>
         <p class="ldm-hint">The project uses your current warp plan settings and loom; adjust them later with “Adjust the plan”.</p>
@@ -268,6 +264,8 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       const photos = form.photos.value;
       const title = form.title.value.trim() || 'My Weaving Projects';
       form.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+      const doneButton = working(form.querySelector(`[data-act=${print ? 'book-print' : 'book-html'}]`));
+      const doneNote = working(bookNote);
       bookNote.textContent = `Putting together ${list.length} project${list.length === 1 ? '' : 's'}…`;
       try {
         const html = await bookDocument(photos === 'none' ? list.map((p) => ({ ...p, photos: [] })) : list, store, {
@@ -278,22 +276,27 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
         });
         if (print) printDocument(html);
         else downloadDocument(title, html);
+        doneNote();
         bookNote.textContent = print
           ? 'In the print window, choose “Save as PDF” as the printer to keep a PDF.'
           : 'Downloaded. Open the file in any browser to read or print it.';
         if (photos !== 'none' && !store.signedIn() && list.some((p) => p.photos.length)) bookNote.textContent += ' Photos were left out: sign in with “Save to Google Drive” to include them.';
       } catch (err) {
+        doneNote();
         bookNote.textContent = `Could not make the book: ${err.message}`;
       } finally {
+        doneNote();
+        doneButton();
         form.querySelectorAll('button').forEach((b) => { b.disabled = false; });
       }
     }
 
     renderCards(store.local());
     if (store.signedIn()) {
-      note.textContent = 'Checking your Google Drive…';
+      const done = working(note, 'Checking your Google Drive…');
       recoverCurrentProject().then(() => store.list()).then((list) => {
         if (!root.contains(note)) return;
+        done();
         note.textContent = '';
         renderCards(list);
       });
@@ -308,12 +311,19 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
   function showProject(id) {
     let project = store.get(id);
     if (!project) {
-      root.innerHTML = `<p><a class="ldm-back" href="#">← My Projects</a></p><p>That project isn't in this browser${store.signedIn() ? ' or your Google Drive' : ''}.</p>`;
+      root.innerHTML = `<p><a class="ldm-back" href="#">← My Projects</a></p><p data-missing>That project isn't in this browser.</p>`;
       if (store.signedIn()) {
+        const msg = root.querySelector('[data-missing]');
+        const done = working(msg, 'Looking for this project in your Google Drive…');
         store.recover(id, [loadCurrent()?.meta.title || 'Untitled project', ''])
           .then(() => store.list())
           .then(() => {
-            if (store.get(id) && new URLSearchParams(location.hash.slice(1)).get('p') === id) route();
+            if (new URLSearchParams(location.hash.slice(1)).get('p') !== id) return;
+            if (store.get(id)) route();
+            else {
+              done();
+              msg.textContent = "That project isn't in this browser or your Google Drive. It may have been deleted.";
+            }
           });
       }
       return null;
@@ -322,17 +332,22 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
     let timer = 0;
     const shown = new Map(); // photo id -> object URL already on the page (for Ctrl+P)
     let saveState = '';
+    let saveBusy = false;
 
     // ---- saving ----
     const statusEl = () => root.querySelector('[data-save]');
-    function showSave(text) {
+    function showSave(text, busy = false) {
       saveState = text;
+      saveBusy = busy;
       const el = statusEl();
-      if (el) el.textContent = text;
+      if (el) {
+        el.textContent = text;
+        el.classList.toggle('ldm-working', busy);
+      }
     }
     function changed() {
       project = store.put(project);
-      showSave(store.signedIn() ? 'Saving…' : 'Saved in this browser');
+      showSave(store.signedIn() ? 'Saving…' : 'Saved in this browser', store.signedIn());
       clearTimeout(timer);
       timer = setTimeout(flush, SAVE_DELAY);
     }
@@ -362,7 +377,7 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
         <header class="ldm-proj-top">
           <label class="ldm-proj-title"><span class="ldm-visually-hidden">Project name</span><input data-f="title" value="${e(p.title)}" placeholder="Project name"></label>
           <label class="ldm-inline">Status <select data-f="status">${options(STATUSES, p.status)}</select></label>
-          <span class="ldm-hint" data-save aria-live="polite">${e(saveState)}</span>
+          <span class="ldm-hint${saveBusy ? ' ldm-working' : ''}" data-save aria-live="polite">${e(saveState)}</span>
           <div class="ldm-actions">
             <button type="button" data-act="print">Print / Save as PDF</button>
             <button type="button" data-act="html">Download HTML</button>
@@ -557,7 +572,7 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
             </div>
           </figure>`).join('')}
         </div>
-        <dialog class="ldm-proj-viewer"><img alt=""><form method="dialog"><button>Close</button></form></dialog>`;
+        <dialog class="ldm-proj-viewer"><img alt=""><form method="dialog"><span class="ldm-hint" data-viewer-note></span><button>Close</button></form></dialog>`;
     }
 
     // Thumbnails and the cover, fetched from Drive.
@@ -565,7 +580,9 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       for (const btn of root.querySelectorAll('[data-photo]')) {
         const ph = project.photos.find((x) => x.id === btn.dataset.photo);
         if (!ph) { btn.remove(); continue; }
+        btn.classList.add('ldm-working');
         store.photoUrl(ph.thumb).then((url) => {
+          btn.classList.remove('ldm-working');
           if (!url) return;
           btn.querySelector('img').src = url;
           if (!shown.has(ph.id)) shown.set(ph.id, url);
@@ -574,7 +591,9 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       const slot = root.querySelector('[data-cover-slot]');
       const cover = coverPhoto(project);
       if (slot && cover) {
+        slot.innerHTML = '<p class="ldm-hint ldm-working">Loading the cover photo…</p>';
         store.photoUrl(cover.file).then((url) => {
+          slot.innerHTML = '';
           if (!url) return;
           slot.innerHTML = `<figure class="ldm-proj-cover"><img alt="${e(cover.caption)}"></figure>`;
           slot.querySelector('img').src = url;
@@ -590,14 +609,17 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       if (!dlg) {
         dlg = document.createElement('dialog');
         dlg.className = 'ldm-proj-viewer';
-        dlg.innerHTML = '<img alt=""><form method="dialog"><button>Close</button></form>';
+        dlg.innerHTML = '<img alt=""><form method="dialog"><span class="ldm-hint" data-viewer-note></span><button>Close</button></form>';
         root.append(dlg);
       }
       const img = dlg.querySelector('img');
       img.alt = ph.caption || '';
       img.src = (await store.photoUrl(ph.thumb)) || '';
       dlg.showModal();
+      const done = working(dlg.querySelector('[data-viewer-note]'), 'Loading the full-size photo…');
       const full = await store.photoUrl(ph.file);
+      done();
+      dlg.querySelector('[data-viewer-note]').textContent = '';
       if (full) img.src = full;
     }
 
@@ -606,6 +628,9 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       if (!files.length) return [];
       const note = root.querySelector('[data-export-note]');
       const added = [];
+      const doneNote = working(note);
+      const doneButton = working(root.querySelector('[data-act=add-photos]'));
+      const failed = [];
       for (const [i, file] of files.entries()) {
         note.textContent = `Adding photo ${i + 1} of ${files.length}…`;
         try {
@@ -613,16 +638,14 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
           project.photos.push(ph);
           added.push(ph);
         } catch (err) {
-          note.textContent = `Could not add ${file.name}: ${err.message}`;
+          failed.push(`Could not add ${file.name}: ${err.message}`);
           log('projects', `photo upload failed: ${err?.message ?? err}`);
-          if (!added.length && i === files.length - 1) return added;
         }
       }
-      if (added.length) {
-        if (!entry) note.textContent = `Added ${added.length} photo${added.length === 1 ? '' : 's'}.`;
-        else note.textContent = '';
-        changed();
-      }
+      doneNote();
+      doneButton();
+      note.textContent = [added.length && !entry ? `Added ${added.length} photo${added.length === 1 ? '' : 's'}.` : '', ...failed].filter(Boolean).join(' ');
+      if (added.length) changed();
       return added;
     }
 
@@ -669,40 +692,46 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
     root.addEventListener('change', onChange);
 
     const actions = {
-      async print() {
-        await exportDoc(true);
+      async print(btn) {
+        await whileWorking(btn, () => exportDoc(true));
       },
-      async html() {
-        await exportDoc(false);
+      async html(btn) {
+        await whileWorking(btn, () => exportDoc(false));
       },
-      async delete() {
+      async delete(btn) {
         if (!confirm(`Delete “${project.title || 'this project'}”${project.photos.length ? ` and its ${project.photos.length} photo${project.photos.length === 1 ? '' : 's'}` : ''}? This can't be undone.`)) return;
         clearTimeout(timer);
         timer = 0;
+        working(btn, 'Deleting…');
         await store.remove(project.id);
         location.hash = '';
       },
-      async designer() {
+      async designer(btn) {
+        const done = working(btn, 'Opening…');
         try {
           await chooseDraft(normalizeDraft(project.snapshot.draft), project.draftId);
           if (project.status === 'planned') setCurrentProject(project.id);
           setNotice(`Now working on the draft from your project “${project.title}”.`);
           location.href = designerUrl;
         } catch (err) {
+          done();
           actNote(`Could not open the draft: ${err.message}`);
         }
       },
-      async adjust() {
+      async adjust(btn) {
         if (!confirm('Make this project\'s draft and warp settings your current plan, to change them on the Warp plan page?')) return;
+        const done = working(btn, 'Opening…');
         try {
           await usePlan(project);
           location.href = warpUrl;
         } catch (err) {
+          done();
           actNote(`Could not open the plan: ${err.message}`);
         }
       },
-      async again() {
+      async again(btn) {
         if (!confirm('Start a new project with this draft, loom, yarns and finishing? Its draft and warp settings become your current plan.')) return;
+        const done = working(btn, 'Starting the new project…');
         const next = projectFrom(project);
         try {
           store.put(next);
@@ -711,6 +740,7 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
           flash = `New project started from “${project.title}”, using its measured shrinkage. It's now your current plan; check the sizes and `;
           location.hash = `p=${next.id}`;
         } catch (err) {
+          done();
           actNote(`Could not start the new project: ${err.message}`);
         }
       },
@@ -734,8 +764,10 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       'add-photos'() {
         root.querySelector('[data-photo-input]').click();
       },
-      async signin() {
+      async signin(btn) {
+        const done = working(btn, 'Signing in…');
         if (await signIn()) render();
+        else done();
       },
     };
 
@@ -760,16 +792,18 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
 
     async function exportDoc(print) {
       const note = root.querySelector('[data-export-note]');
-      note.textContent = 'Preparing the project sheet…';
+      const done = working(note, 'Preparing the project sheet…');
       try {
         const html = await projectDocument(project, store, {
           onPhoto: (done, total) => { note.textContent = `Fetching photos ${done} of ${total}…`; },
         });
         if (print) printDocument(html);
         else downloadDocument(project.title, html);
+        done();
         note.textContent = print ? 'In the print window, choose “Save as PDF” as the printer to keep a PDF.' : 'Downloaded. Open the file in any browser to read or print it.';
         if (project.photos.length && !store.signedIn()) note.textContent += ' Photos were left out: sign in to include them.';
       } catch (err) {
+        done();
         note.textContent = `Could not make the sheet: ${err.message}`;
       }
     }
@@ -788,7 +822,7 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       }
       const act = ev.target.closest('[data-act]');
       if (act && actions[act.dataset.act]) {
-        actions[act.dataset.act]();
+        actions[act.dataset.act](act);
         return;
       }
       const delYarn = ev.target.closest('[data-del-yarn]');
@@ -841,7 +875,7 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
       const files = form.photos ? [...form.photos.files] : [];
       const entry = { id: newItemId(), date: form.date.value || todayIso(), kind: form.kind.value, text: form.text.value.trim(), photoIds: [] };
       if (!entry.text && !files.length && entry.kind === 'note') return;
-      form.querySelector('[type=submit]').disabled = true;
+      working(form.querySelector('[type=submit]'), files.length ? `Adding ${files.length === 1 ? 'the photo' : `${files.length} photos`} and the entry…` : 'Adding…');
       const added = await addPhotos(files, { entry });
       entry.photoIds = added.map((ph) => ph.id);
       project.journal.push(entry);

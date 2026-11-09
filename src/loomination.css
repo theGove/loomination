@@ -70,6 +70,26 @@
 .ldm button:hover, .ldm .ldm-button:hover { border-color: var(--ldm-muted); }
 .ldm :focus-visible { outline: 2px solid var(--ldm-accent); outline-offset: 2px; }
 
+/* Something under way: a spinner before the text (src/ui/html.js working()). */
+.ldm-working::before {
+  content: '';
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.45em;
+  vertical-align: -0.12em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ldm-spin 0.75s linear infinite;
+}
+.ldm button.ldm-working:disabled { opacity: 0.75; cursor: progress; }
+@keyframes ldm-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ldm-working::before { animation-duration: 2.5s; } }
+/* A picture still loading: the spinner in the middle of its box. */
+.ldm .ldm-proj-thumb.ldm-working { position: relative; color: var(--ldm-muted); }
+.ldm-proj-thumb.ldm-working::before { position: absolute; left: 50%; top: 50%; width: 1.4rem; height: 1.4rem; margin: -0.7rem 0 0 -0.7rem; }
+
 /* Filters */
 .ldm-filters {
   display: grid;

@@ -15,7 +15,7 @@ import { layoutDraft, paintDraft, hitTest } from './draft-view.js';
 import * as saved from './saved-drafts.js';
 import { teatherApi } from './sync.js';
 import { timed } from './debug.js';
-import { downloadBlob } from './html.js';
+import { downloadBlob, working } from './html.js';
 
 const isSignedIn = () => !!teatherApi()?.isSignedIn();
 
@@ -331,8 +331,9 @@ export function mountEditor(root, { startUrl, loomUrl }) {
   }
 
   let statusTimer = 0;
-  function status(message) {
+  function status(message, busy = false) {
     readout.textContent = message;
+    readout.classList.toggle('ldm-working', busy);
     clearTimeout(statusTimer);
     statusTimer = setTimeout(() => showReadout(null), 4000);
   }
@@ -343,7 +344,8 @@ export function mountEditor(root, { startUrl, loomUrl }) {
     async keep() {
       const draft = store.get();
       const title = draft.meta.title || 'Untitled';
-      status(`Saving “${title}”…`);
+      status(`Saving “${title}”…`, true);
+      const done = working(root.querySelector('[data-act=keep]'));
       try {
         const { id, where } = await saved.saveDraft(draft, ui.savedId);
         ui.savedId = id;
@@ -358,6 +360,8 @@ export function mountEditor(root, { startUrl, loomUrl }) {
         }[where]);
       } catch (err) {
         status(`Not saved: ${err.message} Download a .wif instead.`);
+      } finally {
+        done();
       }
     },
     wif: () => download(`${fileName()}.wif`, toWif(store.get()), 'text/plain'),

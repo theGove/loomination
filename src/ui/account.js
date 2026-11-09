@@ -63,6 +63,7 @@ export function mountAccount(header) {
     const btn = box.querySelector('button');
     btn.disabled = true;
     btn.textContent = 'Signing in…';
+    btn.classList.add('ldm-working');
     // If the weaver closes the Google window, let them try again.
     const retry = setTimeout(() => {
       if (!T.user()) render();

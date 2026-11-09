@@ -8,7 +8,7 @@ import { readDraftFile } from './editor-view.js';
 import * as saved from './saved-drafts.js';
 import { paintThumbnail } from './draft-view.js';
 import { teatherApi } from './sync.js';
-import { escapeHtml } from './html.js';
+import { escapeHtml, working } from './html.js';
 import { log } from './debug.js';
 
 const isSignedIn = () => !!teatherApi()?.isSignedIn();
@@ -105,8 +105,9 @@ export function mountStart(root, { libraryUrl, designerUrl, aiUrl, imageToWifUrl
       note.textContent = 'Saved in this browser. Sign in with "Save to Google Drive" to keep them in your Drive as .wif files.';
       return;
     }
-    note.textContent = 'Checking your Google Drive…';
+    const done = working(note, 'Checking your Google Drive…');
     const list = await saved.listDrafts();
+    done();
     note.textContent = 'Each draft is a .wif file in the Loomination folder of your Google Drive.';
     renderMine(list);
   }
