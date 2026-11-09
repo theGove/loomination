@@ -10,7 +10,7 @@ import {
   newProject, projectFrom, statusAfter, comparison, factorsForPlan, coverPhoto, newItemId,
 } from '../core/project.js';
 import { withWarpDefaults } from '../core/warp-plan.js';
-import { myProjects as store, currentSnapshot, WARP_PLAN_KEY } from './my-projects.js';
+import { myProjects as store, currentSnapshot, recoverCurrentProject, WARP_PLAN_KEY } from './my-projects.js';
 import { localDrafts } from './my-drafts.js';
 import { loadCurrent, loadCurrentId, chooseDraft, setCurrentProject, setNotice } from './saved-drafts.js';
 import { paintThumbnail } from './draft-view.js';
@@ -292,7 +292,7 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
     renderCards(store.local());
     if (store.signedIn()) {
       note.textContent = 'Checking your Google Drive…';
-      store.list().then((list) => {
+      recoverCurrentProject().then(() => store.list()).then((list) => {
         if (!root.contains(note)) return;
         note.textContent = '';
         renderCards(list);
@@ -310,9 +310,11 @@ export function mountProjects(root, { startUrl, designerUrl, warpUrl }) {
     if (!project) {
       root.innerHTML = `<p><a class="ldm-back" href="#">← My Projects</a></p><p>That project isn't in this browser${store.signedIn() ? ' or your Google Drive' : ''}.</p>`;
       if (store.signedIn()) {
-        store.list().then(() => {
-          if (store.get(id) && new URLSearchParams(location.hash.slice(1)).get('p') === id) route();
-        });
+        store.recover(id, [loadCurrent()?.meta.title || 'Untitled project', ''])
+          .then(() => store.list())
+          .then(() => {
+            if (store.get(id) && new URLSearchParams(location.hash.slice(1)).get('p') === id) route();
+          });
       }
       return null;
     }

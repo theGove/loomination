@@ -1,8 +1,14 @@
 // "My Projects": each project is a JSON file in the Loomination folder that
-// Teather keeps in the weaver's Google Drive, under projects/, e.g.
-// projects/project-Rosepath-towels-p1a2b3c.json. Photos are their own files,
+// Teather keeps in the weaver's Google Drive, e.g.
+// project-Rosepath-towels-p1a2b3c.json. Photos are their own files,
 // projects/photos/<project id>-<photo id>.jpg (and -t.jpg, a small thumbnail),
 // so the project file stays small.
+//
+// Project files must be at the top of the folder: Teather's files.list() lists
+// only the top level, and projects are found by listing. (The first version put
+// them in projects/; such copies are moved up the next time they're saved, and
+// a file the list can't show is never taken for a deletion.) Photos are only
+// ever fetched by name, so they can live in a subfolder.
 //
 // As with My drafts (my-drafts.js), a copy of every project is kept in this
 // browser, so the list is instant and works offline or signed out. A copy
@@ -12,17 +18,18 @@
 
 import { normalizeProject, makeSnapshot } from '../core/project.js';
 import * as sync from './sync.js';
-import { loadCurrent } from './saved-drafts.js';
+import { loadCurrent, loadCurrentProject } from './saved-drafts.js';
 import { loadLoom } from './loom-profile.js';
 import { log } from './debug.js';
 import { slugify } from './slug.js';
 
 const LOCAL = 'loomination.myProjects.';
-const FILE = /^projects\/project-(?:.+-)?(p[a-z0-9]+)\.json$/i;
+const FILE = /^project-(?:.+-)?(p[a-z0-9]+)\.json$/i;
+const OLD_FILE = /^projects\/project-(?:.+-)?(p[a-z0-9]+)\.json$/i; // first version, not listable
 
 export function projectFileName(project) {
   const slug = slugify(project.title);
-  return `projects/project-${slug ? `${slug}-` : ''}${project.id}.json`;
+  return `project-${slug ? `${slug}-` : ''}${project.id}.json`;
 }
 
 /** The project id in a file name, or null if the file isn't a project. */
@@ -172,8 +179,8 @@ export function createMyProjects({ teather = () => sync.teatherApi(), store = lo
         const left = await removeFiles(T, e, [e.file?.name, ...(e.trash ?? [])].filter(Boolean));
         if (left.length) store.put({ ...e, file: null, trash: left });
         else store.remove(e.id);
-      } else if (e.pending) {
-        await upload(T, e);
+      } else if (e.pending || (e.file && OLD_FILE.test(e.file.name))) {
+        await upload(T, e); // a projects/ copy is renamed to the top level
       } else if (e.trash?.length) {
         store.put({ ...e, trash: await removeFiles(T, e, e.trash) });
       }
@@ -199,7 +206,7 @@ export function createMyProjects({ teather = () => sync.teatherApi(), store = lo
     }));
     // Copies whose file is gone were deleted on another computer.
     for (const e of store.all()) {
-      if (!seen.has(e.id) && !e.pending && !e.deleted && e.file) store.remove(e.id);
+      if (!seen.has(e.id) && !e.pending && !e.deleted && e.file && !e.file.name.includes('/')) store.remove(e.id);
     }
   }
 
@@ -271,6 +278,29 @@ export function createMyProjects({ teather = () => sync.teatherApi(), store = lo
     signedIn: () => !!signedIn(),
 
     /**
+     * Fetch a project the first version saved as projects/project-<title>-<id>.json
+     * (which listing can't find), trying each title it might have had, and move
+     * it to the top level. Returns the project or null.
+     */
+    async recover(id, titles = []) {
+      const T = signedIn();
+      if (!T || !id || get(id)) return get(id);
+      for (const title of new Set(titles)) {
+        const name = `projects/${projectFileName({ id, title })}`;
+        try {
+          const project = normalizeProject(JSON.parse(await (await T.files.get(name)).text()));
+          store.put({ id, project: { ...project, id }, file: { name, modifiedTime: null }, pending: true, trash: [] });
+          await upload(T, store.get(id));
+          log('projects', `recovered "${project.title}" from ${name}`);
+          return get(id);
+        } catch (err) {
+          if (err?.status !== 404 && err?.code !== 'not_found') log('projects', `could not recover ${name}: ${err?.message ?? err}`);
+        }
+      }
+      return null;
+    },
+
+    /**
      * Upload a photo (already shrunk; see photo.js) and its thumbnail. Returns
      * the photo's record for project.photos. Needs sign-in.
      */
@@ -316,6 +346,14 @@ export function createMyProjects({ teather = () => sync.teatherApi(), store = lo
 }
 
 export const myProjects = createMyProjects();
+
+/** Bring back the working draft's project if the first version lost track of it. */
+export function recoverCurrentProject() {
+  const id = loadCurrentProject();
+  const draft = loadCurrent();
+  if (!id || !draft || myProjects.get(id)) return Promise.resolve(null);
+  return myProjects.recover(id, [draft.meta.title || 'Untitled project', '']);
+}
 
 // The warp planner's saved inputs (warp-view.js).
 export const WARP_PLAN_KEY = 'warpPlan';

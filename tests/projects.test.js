@@ -209,7 +209,8 @@ function fakeTeather() {
     files: {
       async list() {
         if (T.offline) throw fail(undefined, 'offline');
-        return [...folder].map(([name, f]) => ({ name, modifiedTime: f.modifiedTime }));
+        // Like Teather: only the top level of the folder is listed.
+        return [...folder].filter(([name]) => !name.includes('/')).map(([name, f]) => ({ name, modifiedTime: f.modifiedTime }));
       },
       async get(name) {
         if (!folder.has(name)) throw fail(404, 'not_found');
@@ -235,12 +236,12 @@ function fakeTeather() {
 
 test('projects: file names never clash with drafts', () => {
   const p = { id: 'p1a2b3c', title: 'Rosépath towels, #3!' };
-  assertEqual(projectFileName(p), 'projects/project-Rosepath-towels-3-p1a2b3c.json');
-  assertEqual(projectIdFromFileName('projects/project-Rosepath-towels-3-p1a2b3c.json'), 'p1a2b3c');
-  assertEqual(projectIdFromFileName('projects/project-p1a2b3c.json'), 'p1a2b3c');
+  assertEqual(projectFileName(p), 'project-Rosepath-towels-3-p1a2b3c.json');
+  assertEqual(projectIdFromFileName('project-Rosepath-towels-3-p1a2b3c.json'), 'p1a2b3c');
+  assertEqual(projectIdFromFileName('project-p1a2b3c.json'), 'p1a2b3c');
   assertEqual(projectIdFromFileName('draft-Rosepath-d1a2b3c.wif'), null);
   assertEqual(projectIdFromFileName(photoFileName('p1', 'x')), null);
-  assertEqual(idFromFileName('projects/project-Rosepath-towels-3-p1a2b3c.json'), null);
+  assertEqual(idFromFileName('project-Rosepath-towels-3-p1a2b3c.json'), null);
   assertEqual(photoFileName('p1', 'x', true), 'projects/photos/p1-x-t.jpg');
 });
 
@@ -255,11 +256,14 @@ test('projects: signed out they stay in this browser, then upload on sign-in', a
   assertEqual(T.folder.size, 0);
   T.signedIn = true;
   await store.list();
-  assertEqual([...T.folder.keys()], ['projects/project-Twill-towels-pone.json']);
+  assertEqual([...T.folder.keys()], ['project-Twill-towels-pone.json']);
   // Renaming moves the file.
   store.put({ ...store.get('pone'), title: 'Blue towels' });
   assertEqual((await store.flush('pone')).where, 'drive');
-  assertEqual([...T.folder.keys()], ['projects/project-Blue-towels-pone.json']);
+  assertEqual([...T.folder.keys()], ['project-Blue-towels-pone.json']);
+  // Listing finds it again, so it stays.
+  await store.list();
+  assertEqual(store.local().map((x) => x.id), ['pone']);
 });
 
 test('projects: a project changed on another computer is kept as a copy', async () => {
@@ -267,7 +271,7 @@ test('projects: a project changed on another computer is kept as a copy', async 
   const T = fakeTeather();
   const store = createMyProjects({ teather: () => T });
   await store.save(newProject(snap(), { id: 'pconf' }));
-  const name = 'projects/project-Twill-towels-pconf.json';
+  const name = 'project-Twill-towels-pconf.json';
   // Another computer saves it later.
   const other = JSON.parse(T.folder.get(name).data);
   await T.files.put(name, JSON.stringify({ ...other, notes: 'from the other computer' }));
@@ -324,4 +328,31 @@ test('projects: photos need sign-in', async () => {
     err = e;
   }
   assert(err && /Sign in/.test(err.message), 'asks to sign in');
+});
+
+test('projects: copies saved by the first version under projects/ are moved up, not lost', async () => {
+  freshStorage();
+  const T = fakeTeather();
+  const store = createMyProjects({ teather: () => T });
+  const p = newProject(snap(), { id: 'pold1' });
+  // The first version: the file in projects/, and this browser's copy points at it.
+  const oldName = 'projects/project-Twill-towels-pold1.json';
+  await T.files.put(oldName, JSON.stringify(p));
+  localStorage.setItem('loomination.myProjects.pold1', JSON.stringify({ id: 'pold1', project: p, file: { name: oldName, modifiedTime: '2026-11-09T12:00:00Z' }, pending: false, trash: [] }));
+  const list = await store.list();
+  assertEqual(list.map((x) => x.id), ['pold1'], 'still listed');
+  assertEqual([...T.folder.keys()], ['project-Twill-towels-pold1.json'], 'moved to the top level');
+});
+
+test('projects: a project the first version lost can be recovered by id and title', async () => {
+  freshStorage();
+  const T = fakeTeather();
+  const store = createMyProjects({ teather: () => T });
+  const p = newProject(snap(), { id: 'plost' });
+  await T.files.put('projects/project-Twill-towels-plost.json', JSON.stringify(p));
+  assertEqual(await store.recover('plost', ['Wrong title', '']), null);
+  const back = await store.recover('plost', ['Twill towels']);
+  assertEqual(back?.id, 'plost');
+  assertEqual([...T.folder.keys()], ['project-Twill-towels-plost.json']);
+  assertEqual((await store.list()).map((x) => x.id), ['plost']);
 });
