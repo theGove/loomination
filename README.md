@@ -11,8 +11,8 @@ repo through jsDelivr at a tagged version.
 
 My drafts, the loom profile, warp plan, AI helper and cone settings are kept in
 this browser, and in the weaver's own Google Drive when they choose **Save to
-Google Drive** in the header. That uses [Teather](https://teather.pages.dev):
-pages load `https://teather.pages.dev/v1/teather.js` with `defer` before
+Google Drive** in the header. That uses [Teather](https://teather.technologylearningcompany.com):
+pages load `https://teather.technologylearningcompany.com/v1/teather.js` with `defer` before
 `src/main.js`, and [src/ui/sync.js](src/ui/sync.js) wraps it. Without it
 (offline, or views embedded elsewhere) everything still works locally. The
 autosaved working draft stays in the browser only.

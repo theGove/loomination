@@ -1,7 +1,7 @@
 // Saved settings and "My drafts", synced to the weaver's own Google Drive through
-// Teather (https://teather.pages.dev) when they sign in.
+// Teather (https://teather.technologylearningcompany.com) when they sign in.
 //
-// Pages load teather.js with `async`, so a slow teather.pages.dev can't stall
+// Pages load teather.js with `async`, so a slow teather.technologylearningcompany.com can't stall
 // the page; main.js waits for it briefly (loaded()) before any view mounts. If it
 // didn't load in time (offline, slow, blocked, embedded in a blog), everything
 // works from this browser alone: we read and write the same local format Teather

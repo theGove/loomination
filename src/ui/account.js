@@ -42,7 +42,7 @@ export function mountAccount(header) {
           <strong class="ldm-account-name"></strong>
           <small class="ldm-account-email"></small>
           <small class="ldm-account-status"></small>
-          <a href="https://teather.pages.dev/manage?site=loomination.org" target="_blank" rel="noopener">Manage your saved data</a>
+          <a href="https://teather.technologylearningcompany.com/manage?site=loomination.org" target="_blank" rel="noopener">Manage your saved data</a>
           <button type="button" data-signout>Sign out</button>
         </div>
       </details>`;

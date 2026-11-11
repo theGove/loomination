@@ -51,7 +51,7 @@ const views = {
 // Saved data: move anything from older versions, give teather.js a moment to
 // load, show the sign-in control on loomination.org pages, and wait (briefly)
 // for the first sync so views start from the weaver's latest data. Both waits
-// are capped, so a slow teather.pages.dev delays the page by seconds at most.
+// are capped, so a slow teather.technologylearningcompany.com delays the page by seconds at most.
 debug.start();
 sync.migrateLegacy();
 // An older link that names a draft (loom.html#library=hw-12871) makes it the
